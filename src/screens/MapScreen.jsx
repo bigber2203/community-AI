@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Star, MapPin, Check, Search, Compass, Shield, ShieldAlert, Heart, Share2, Phone } from 'lucide-react';
-import URMap from '../components/URmap';
+import URmap from '../components/URmap';
 import { eventService } from '../services/eventService';
 import { listingService } from '../services/listingService';
 import { rankingService } from '../services/rankingService';

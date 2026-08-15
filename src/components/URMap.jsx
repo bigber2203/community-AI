@@ -6,13 +6,13 @@ import { mapService } from '../services/mapService';
 
 setWorkerUrl(workerUrl);
 
-export default function URMap({ 
-  events = [], 
-  listings = [], 
+export default function URMap({
+  events = [],
+  listings = [],
   center = [91.7362, 26.1445], // Default Guwahati
-  zoom = 13, 
-  onMarkerClick, 
-  onBoundsChange 
+  zoom = 13,
+  onMarkerClick,
+  onBoundsChange
 }) {
   const mapContainer = useRef(null);
   const mapInstance = useRef(null);
@@ -88,11 +88,11 @@ export default function URMap({
     // Draw Events
     events.forEach(evt => {
       const [lng, lat] = mapService.itemToLatLng(evt);
-      
+
       // Determine clay marker color & icon
       let bgColor = 'var(--primary-cyan)'; // Default cyan
       let icon = '🎉';
-      
+
       if (evt.category === 'Nightlife') {
         bgColor = 'var(--pink)';
         icon = '🎧';
@@ -147,7 +147,7 @@ export default function URMap({
     // Draw Listings (Housing & Roommates)
     listings.forEach(list => {
       const [lng, lat] = mapService.itemToLatLng(list);
-      
+
       let bgColor = 'var(--yellow)';
       let icon = '🏠';
 
@@ -201,13 +201,13 @@ export default function URMap({
   }, [events, listings]);
 
   return (
-    <div 
-      ref={mapContainer} 
+    <div
+      ref={mapContainer}
       className="clay-card"
-      style={{ 
-        width: '100%', 
-        height: '100%', 
-        minHeight: '400px', 
+      style={{
+        width: '100%',
+        height: '100%',
+        minHeight: '400px',
         padding: 0,
         borderRadius: '32px',
         overflow: 'hidden',

@@ -1,4 +1,4 @@
-// Reports, Trust & Safety Service for NeighbourAI
+// Reports, Trust & Safety Service for U'R com
 
 let mockReports = [
   {

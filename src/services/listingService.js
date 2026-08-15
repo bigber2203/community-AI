@@ -1,4 +1,4 @@
-// Housing & Roommate Directory Service for NeighbourAI
+// Housing & Roommate Directory Service for U'R com
 
 let mockListings = [
   {

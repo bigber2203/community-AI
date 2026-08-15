@@ -1,4 +1,4 @@
-// Ranking and Neighbour Score Service for NeighbourAI
+// Ranking and U'R Score Service for U'R com
 
 export const rankingService = {
   // Configurable ranking formula
@@ -66,11 +66,11 @@ export const rankingService = {
 
       return {
         ...item,
-        neighbourScore: finalScore
+        urScore: finalScore
       };
     });
 
     // Sort descending by score
-    return scored.sort((a, b) => b.neighbourScore - a.neighbourScore);
+    return scored.sort((a, b) => b.urScore - a.urScore);
   }
 };

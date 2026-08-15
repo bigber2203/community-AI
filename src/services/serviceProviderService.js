@@ -1,4 +1,4 @@
-// Local Service Providers Database and Booking Service for NeighbourAI
+// Local Service Providers Database and Booking Service for U'R com
 
 const mockProviders = [
   {

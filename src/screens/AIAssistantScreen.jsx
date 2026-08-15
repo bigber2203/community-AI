@@ -7,7 +7,7 @@ export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onQui
     {
       id: 'msg-init-01',
       sender: 'ai',
-      text: "Hey! I'm NeighbourAI. Ask me anything about what's happening around you. 🤖\n\nTry asking: 'What should I do tonight?', 'Puja nearby', or 'Find a flatmate near Beltola'!",
+      text: "Hey! I'm U'R com. Ask me anything about what's happening around you. 🤖\n\nTry asking: 'What should I do tonight?', 'Puja nearby', or 'Find a flatmate near Beltola'!",
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -99,7 +99,7 @@ export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onQui
       {/* Top Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
         <div>
-          <h2 style={{ fontSize: '20px', fontWeight: '800' }}>NeighbourAI 🤖</h2>
+          <h2 style={{ fontSize: '20px', fontWeight: '800' }}>U'R com 🤖</h2>
           <p style={{ fontSize: '11px', color: 'var(--text-sub)' }}>Local Discovery Copilot</p>
         </div>
         
@@ -202,7 +202,7 @@ export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onQui
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', fontSize: '10px', color: 'var(--text-sub)' }}>
                         <span>📍 {rec.distance}</span>
                         {rec.cardType === 'event' ? (
-                          <span style={{ color: 'var(--deep-teal)', fontWeight: '700' }}>⭐ {rec.neighbourScore}</span>
+                          <span style={{ color: 'var(--deep-teal)', fontWeight: '700' }}>⭐ {rec.urScore}</span>
                         ) : (
                           <span style={{ color: 'var(--deep-teal)', fontWeight: '700' }}>₹{rec.rent}/mo</span>
                         )}
@@ -263,7 +263,7 @@ export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onQui
         <input 
           type="text" 
           className="clay-input" 
-          placeholder={isListening ? "Listening..." : "Ask NeighbourAI..."}
+          placeholder={isListening ? "Listening..." : "Ask U'R com..."}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}

@@ -210,7 +210,7 @@ export default function AddListingScreen({ onClose, onAddSuccess }) {
             <h4 style={{ fontSize: '14px', textAlign: 'center' }}>Where is it located?</h4>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '11px', fontWeight: '700', marginLeft: '4px' }}>Area / Neighbourhood</label>
+              <label style={{ fontSize: '11px', fontWeight: '700', marginLeft: '4px' }}>Area / Locality</label>
               <div className="clay-input-container">
                 <MapPin size={16} color="var(--deep-teal)" />
                 <input 

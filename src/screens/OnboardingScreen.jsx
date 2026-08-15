@@ -89,7 +89,7 @@ export default function OnboardingScreen({ onComplete }) {
             </div>
             <h1 style={{ fontSize: '30px', lineHeight: '1.2' }}>Know What's Happening<br /><span style={{ color: 'var(--deep-teal)' }}>Around You</span> 🗺️</h1>
             <p style={{ color: 'var(--text-sub)', fontSize: '14px', lineHeight: '1.6' }}>
-              Welcome to NeighbourAI. Discover music events, local festivals, secret house parties, and available rooms/roommates near your location.
+              Welcome to U'R com. Discover music events, local festivals, secret house parties, and available rooms/roommates near your location.
             </p>
           </div>
         )}
@@ -145,7 +145,7 @@ export default function OnboardingScreen({ onComplete }) {
         {step === 3 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', textAlign: 'left' }}>
             <h2 style={{ fontSize: '24px', textAlign: 'center' }}>Choose Your Interests 🎨</h2>
-            <p style={{ fontSize: '12px', color: 'var(--text-sub)', textAlign: 'center', marginBottom: '8px' }}>We will personalize your Neighbour Score and AI recommendations.</p>
+            <p style={{ fontSize: '12px', color: 'var(--text-sub)', textAlign: 'center', marginBottom: '8px' }}>We will personalize your U'R Score and AI recommendations.</p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
               {interestList.map((interest, idx) => {

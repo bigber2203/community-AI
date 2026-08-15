@@ -243,7 +243,7 @@ export default function HomeScreen({ userProfile, setTab, setAIPrefill, onQuickA
                   }}
                 >
                   <Star size={10} color="#FBBF24" fill="#FBBF24" />
-                  <span>{evt.neighbourScore}</span>
+                  <span>{evt.urScore}</span>
                 </div>
               </div>
               <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -288,7 +288,7 @@ export default function HomeScreen({ userProfile, setTab, setAIPrefill, onQuickA
                 <div style={{ fontSize: '10px', color: 'var(--text-sub)' }}>{evt.category} • {evt.distance}</div>
               </div>
               <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--deep-teal)' }}>
-                ⭐ {evt.neighbourScore}
+                ⭐ {evt.urScore}
               </span>
             </div>
           ))}
@@ -319,7 +319,7 @@ export default function HomeScreen({ userProfile, setTab, setAIPrefill, onQuickA
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-sub)' }}>
                   <span>{evt.date}</span>
-                  <span style={{ color: 'var(--deep-teal)', fontWeight: '700' }}>⭐ {evt.neighbourScore}</span>
+                  <span style={{ color: 'var(--deep-teal)', fontWeight: '700' }}>⭐ {evt.urScore}</span>
                 </div>
               </div>
             </div>

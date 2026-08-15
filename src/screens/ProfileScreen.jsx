@@ -106,7 +106,7 @@ export default function ProfileScreen({ userProfile }) {
       {activeTab === 'interests' && (
         <div className="clay-card" style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left' }}>
           <h4 style={{ fontSize: '14px', fontWeight: '800' }}>Your Local Preferences</h4>
-          <p style={{ fontSize: '11.5px', color: 'var(--text-sub)', marginTop: '-6px' }}>Select interests to influence your personalized Neighbour Score on events.</p>
+          <p style={{ fontSize: '11.5px', color: 'var(--text-sub)', marginTop: '-6px' }}>Select interests to influence your personalized U'R Score on events.</p>
           
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
             {allPossibleInterests.map((interest, idx) => {
@@ -144,7 +144,7 @@ export default function ProfileScreen({ userProfile }) {
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <span style={{ fontSize: '9px', fontWeight: '800', color: 'var(--pink)' }}>NIGHTLIFE</span>
               <h4 style={{ fontSize: '13px', fontWeight: '700', marginTop: '2px' }}>Summer Beats Electronic Fest</h4>
-              <div style={{ fontSize: '10px', color: 'var(--text-sub)', marginTop: '2px' }}>⭐ 9.4 Neighbour Score</div>
+              <div style={{ fontSize: '10px', color: 'var(--text-sub)', marginTop: '2px' }}>⭐ 9.4 U'R Score</div>
             </div>
           </div>
 

@@ -1,4 +1,4 @@
-// Global Event Discovery Service for NeighbourAI
+// Global Event Discovery Service for U'R com
 
 let mockEvents = [
   {

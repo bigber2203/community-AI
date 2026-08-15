@@ -73,7 +73,7 @@ export default function Layout({ children, activeTab, setTab, onAddClick }) {
           onClick={() => setTab('map')}
         >
           <Map size={20} strokeWidth={activeTab === 'map' ? 2.5 : 2} />
-          <span className="nav-item-label">Map</span>
+          <span className="nav-item-label">U'R Map</span>
         </div>
 
         {/* Profile Tab */}

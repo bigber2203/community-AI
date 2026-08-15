@@ -195,10 +195,10 @@ export default function DiscoverScreen({ userProfile, quickFilters, clearQuickFi
               >
                 <div style={{ height: '140px', width: '100%', position: 'relative' }}>
                   <img src={evt.image} alt={evt.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  {/* Neighbour Score badge */}
+                  {/* U'R Score badge */}
                   <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(255,255,255,0.95)', padding: '4px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '2px', boxShadow: '0 4px 8px rgba(0,0,0,0.05)' }}>
                     <Star size={12} color="#FBBF24" fill="#FBBF24" />
-                    <span>Score: {evt.neighbourScore}</span>
+                    <span>Score: {evt.urScore}</span>
                   </div>
                   {/* Privacy Badge */}
                   {evt.privacyLevel === 'Private' && (
@@ -305,9 +305,9 @@ export default function DiscoverScreen({ userProfile, quickFilters, clearQuickFi
                     {selectedEvent.category} • {selectedEvent.distance}
                   </span>
                   
-                  {/* Dynamic Neighbour Score display */}
+                  {/* Dynamic U'R Score display */}
                   <span style={{ marginLeft: 'auto', background: 'var(--yellow)', fontSize: '10px', fontWeight: '800', padding: '3px 6px', borderRadius: '6px' }}>
-                    🔥 Score: {selectedEvent.neighbourScore}/10
+                    🔥 Score: {selectedEvent.urScore}/10
                   </span>
                 </div>
                 <h3 style={{ fontSize: '18px', fontWeight: '800', marginTop: '6px' }}>{selectedEvent.title}</h3>

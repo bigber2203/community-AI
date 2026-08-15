@@ -1,4 +1,4 @@
-// AI Discovery Assistant Service for NeighbourAI
+// AI Discovery Assistant Service for U'R com
 import { eventService } from './eventService';
 import { listingService } from './listingService';
 import { rankingService } from './rankingService';
@@ -10,7 +10,7 @@ export const aiService = {
 
     if (!cleanText) {
       return {
-        reply: "Hey! I'm NeighbourAI. Ask me what is happening around you tonight, find apartments, PGs, or discover events! 🤖",
+        reply: "Hey! I'm U'R com. Ask me what is happening around you tonight, find apartments, PGs, or discover events! 🤖",
         recommendations: []
       };
     }
@@ -78,7 +78,7 @@ export const aiService = {
       } else if (language === "Assamese") {
         reply = `আজি নিশাটোৰ বাবে আপোনাৰ ওচৰত থকা আটাইতকৈ ধুনীয়া অনুষ্ঠানসমূহ:`;
       } else {
-        reply = `Here is what is happening around you tonight! These events are trending with high Neighbour Scores:`;
+        reply = `Here is what is happening around you tonight! These events are trending with high U'R Scores:`;
       }
 
       return {

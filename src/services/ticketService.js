@@ -1,4 +1,4 @@
-// Ticket Management Service for NeighbourAI
+// Ticket Management Service for U'R com
 
 let mockTickets = [
   {

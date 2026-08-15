@@ -54,8 +54,8 @@ export default function OnboardingScreen({ onComplete }) {
   ];
 
   return (
-    <div className="screen-content" style={{ justifyContent: 'space-between', height: '100%', paddingBottom: '30px' }}>
-      
+    <div className="screen-content" style={{ height: '100%' }}>
+      <div className="screen-content-inner" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', paddingBottom: '30px', paddingTop: '10px' }}>
       {/* Indicator */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: '6px' }}>
@@ -201,6 +201,7 @@ export default function OnboardingScreen({ onComplete }) {
         <span>{step === 4 ? 'Let\'s Go!' : 'Continue'}</span>
         <ChevronRight size={18} />
       </button>
+      </div>
     </div>
   );
 }

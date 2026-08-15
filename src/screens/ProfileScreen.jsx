@@ -38,8 +38,8 @@ export default function ProfileScreen({ userProfile }) {
   };
 
   return (
-    <div className="screen-content" style={{ paddingBottom: '90px' }}>
-      
+    <div className="screen-content">
+      <div className="screen-content-inner">
       {/* Profile Header */}
       <div className="clay-card" style={{ display: 'flex', gap: '16px', alignItems: 'center', marginTop: '10px', background: 'linear-gradient(135deg, #FFFFFF 0%, #F5FFFF 100%)', border: '1px solid rgba(22, 217, 227, 0.15)' }}>
         <div style={{ width: '68px', height: '68px', borderRadius: '50%', backgroundColor: 'var(--primary-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 16px rgba(22, 217, 227, 0.25)', fontSize: '32px' }}>
@@ -205,7 +205,7 @@ export default function ProfileScreen({ userProfile }) {
           ))}
         </div>
       )}
-
+      </div>
     </div>
   );
 }

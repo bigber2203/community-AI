@@ -94,8 +94,8 @@ export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onQui
   };
 
   return (
-    <div className="screen-content" style={{ paddingBottom: '100px', height: '100%' }}>
-      
+    <div className="screen-content" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div className="screen-content-inner" style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', position: 'relative', paddingBottom: '180px' }}>
       {/* Top Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
         <div>
@@ -135,13 +135,15 @@ export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onQui
         className="custom-scroll"
         style={{ 
           flex: 1, 
-          minHeight: '260px', 
-          maxHeight: '340px',
+          minHeight: '200px', 
           overflowY: 'auto', 
           display: 'flex', 
           flexDirection: 'column', 
           gap: '14px', 
-          padding: '10px 4px'
+          padding: '10px 4px',
+          width: '100%',
+          maxWidth: '500px',
+          margin: '0 auto'
         }}
       >
         {messages.map((msg) => (
@@ -238,9 +240,11 @@ export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onQui
           alignItems: 'center', 
           gap: '8px', 
           position: 'absolute', 
-          bottom: '106px', 
-          left: '20px', 
-          right: '20px',
+          bottom: '96px', 
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 'calc(100% - 40px)',
+          maxWidth: '500px',
           zIndex: 10
         }}
       >
@@ -286,6 +290,7 @@ export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onQui
           to { transform: translateY(-6px); }
         }
       `}</style>
+      </div>
     </div>
   );
 }

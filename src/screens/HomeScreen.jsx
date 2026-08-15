@@ -64,7 +64,8 @@ export default function HomeScreen({ userProfile, setTab, setAIPrefill, onQuickA
 
   return (
     <div className="screen-content">
-      {/* Top Header Location Banner */}
+      <div className="screen-content-inner">
+        {/* Top Header Location Banner */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: '10px' }}>
         <div style={{ textAlign: 'left' }}>
           <h2 style={{ fontSize: '22px', fontWeight: '800', lineHeight: '1.2' }}>
@@ -144,7 +145,7 @@ export default function HomeScreen({ userProfile, setTab, setAIPrefill, onQuickA
 
       {/* Quick Action Grid */}
       <div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+        <div className="quick-actions-grid">
           {[
             { label: 'Events', icon: '🎉', action: 'Events', bg: '#EBFBFC' },
             { label: 'Map', icon: '🗺️', action: 'Map', bg: '#F5F3FF' },
@@ -195,16 +196,7 @@ export default function HomeScreen({ userProfile, setTab, setAIPrefill, onQuickA
         </div>
         
         {/* Horizontal scroll slider */}
-        <div 
-          className="custom-scroll" 
-          style={{ 
-            display: 'flex', 
-            gap: '14px', 
-            overflowX: 'auto', 
-            padding: '4px 2px',
-            scrollbarWidth: 'none'
-          }}
-        >
+        <div className="tonight-scroll-container custom-scroll">
           {events.filter(e => e.date === 'Tonight').map((evt) => (
             <div 
               key={evt.id} 
@@ -340,7 +332,7 @@ export default function HomeScreen({ userProfile, setTab, setAIPrefill, onQuickA
           </button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div className="housing-preview-grid">
           {listings.slice(0, 2).map(list => (
             <div 
               key={list.id}
@@ -398,6 +390,7 @@ export default function HomeScreen({ userProfile, setTab, setAIPrefill, onQuickA
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

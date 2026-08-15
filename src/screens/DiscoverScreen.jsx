@@ -125,8 +125,8 @@ export default function DiscoverScreen({ userProfile, quickFilters, clearQuickFi
   const { events: displayEvents, listings: displayListings } = getFilteredItems();
 
   return (
-    <div className="screen-content" style={{ paddingBottom: '90px' }}>
-      
+    <div className="screen-content">
+      <div className="screen-content-inner">
       {/* Title */}
       <div style={{ marginTop: '10px' }}>
         <h2 style={{ fontSize: '24px', fontWeight: '800' }}>Discover Around You 🔎</h2>
@@ -186,7 +186,8 @@ export default function DiscoverScreen({ userProfile, quickFilters, clearQuickFi
         {displayEvents.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <h4 style={{ fontSize: '15px', textAlign: 'left' }}>Events & Nights</h4>
-            {displayEvents.map((evt) => (
+            <div className="discover-grid">
+              {displayEvents.map((evt) => (
               <div 
                 key={evt.id} 
                 onClick={() => setSelectedEvent(evt)}
@@ -221,6 +222,7 @@ export default function DiscoverScreen({ userProfile, quickFilters, clearQuickFi
                 </div>
               </div>
             ))}
+            </div>
           </div>
         )}
 
@@ -228,7 +230,8 @@ export default function DiscoverScreen({ userProfile, quickFilters, clearQuickFi
         {displayListings.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <h4 style={{ fontSize: '15px', textAlign: 'left' }}>Housing & Roommates</h4>
-            {displayListings.map((list) => (
+            <div className="discover-grid">
+              {displayListings.map((list) => (
               <div 
                 key={list.id} 
                 onClick={() => setSelectedListing(list)}
@@ -257,6 +260,7 @@ export default function DiscoverScreen({ userProfile, quickFilters, clearQuickFi
                 </div>
               </div>
             ))}
+            </div>
           </div>
         )}
 
@@ -476,7 +480,7 @@ export default function DiscoverScreen({ userProfile, quickFilters, clearQuickFi
           </div>
         </div>
       )}
-
+      </div>
     </div>
   );
 }

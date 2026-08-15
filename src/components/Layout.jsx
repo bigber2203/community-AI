@@ -12,26 +12,7 @@ export default function Layout({ children, activeTab, setTab, onAddClick }) {
       {/* Floating Action Button (FAB) for adding a listing - E.g. Event, Room, Roommate */}
       <button
         onClick={onAddClick}
-        className="clay-btn"
-        style={{
-          position: 'absolute',
-          bottom: '108px',
-          right: '20px',
-          width: '52px',
-          height: '52px',
-          borderRadius: '50%',
-          backgroundColor: 'var(--purple)',
-          color: '#FFFFFF',
-          padding: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 8px 16px rgba(155, 123, 255, 0.35), inset 3px 3px 6px rgba(255,255,255,0.4), inset -3px -3px 6px rgba(0,0,0,0.15)',
-          zIndex: 90,
-          border: 'none',
-          cursor: 'pointer',
-          transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.25)'
-        }}
+        className="fab-add"
       >
         <Plus size={24} strokeWidth={2.5} />
       </button>

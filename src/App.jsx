@@ -68,8 +68,10 @@ function App() {
               style={{
                 position: 'absolute',
                 top: '16px',
-                left: '16px',
-                right: '16px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: 'calc(100% - 32px)',
+                maxWidth: '500px',
                 zIndex: 999,
                 padding: '12px 16px',
                 borderRadius: '16px',

@@ -1,193 +1,127 @@
-// AI Assistant Service for NeighbourAI
-
-const SOCIETY_RULES = [
-  {
-    keywords: ["gym", "fitness", "exercise"],
-    question: "What are the gym timings?",
-    answer: "The community gym is open daily from 6:00 AM to 10:00 PM. Clean shoes are mandatory, and residents must sign in at the entry desk.",
-    ruleRef: "Section 4.2 - Recreation & Amenities"
-  },
-  {
-    keywords: ["pet", "dog", "cat", "animal"],
-    question: "Are pets allowed in the garden?",
-    answer: "Yes, pets are allowed in the central garden, but they must be kept on a leash at all times. Owners are responsible for cleaning up after their pets.",
-    ruleRef: "Section 7.1 - Animal Control & Pets"
-  },
-  {
-    keywords: ["garbage", "trash", "waste", "dustbin"],
-    question: "When is garbage collected?",
-    answer: "Door-to-door dry and wet waste collection starts at 8:30 AM every morning. Please segregate your waste before disposal.",
-    ruleRef: "Section 3.5 - Waste Management"
-  },
-  {
-    keywords: ["pool", "swimming", "swim"],
-    question: "Can guests use the swimming pool?",
-    answer: "Guests are permitted to use the swimming pool only if accompanied by a host resident. A guest pass (₹50/day) must be generated in the app.",
-    ruleRef: "Section 4.5 - Swimming Pool Guidelines"
-  },
-  {
-    keywords: ["hall", "clubhouse", "booking", "celebration", "party"],
-    question: "How do I book the community hall?",
-    answer: "The community hall can be booked up to 3 months in advance via the 'Amenities' tab in the app. A refundable security deposit of ₹5,000 is required.",
-    ruleRef: "Section 5.1 - Clubhouse & Hall Bookings"
-  },
-  {
-    keywords: ["visitor", "parking", "car", "guest"],
-    question: "What are the visitor parking rules?",
-    answer: "Visitors must park only in the designated 'V-parking' slots near Gate 2. Overnight visitor parking requires a pre-approved parking pass from the security desk.",
-    ruleRef: "Section 2.3 - Parking Regulations"
-  }
-];
-
-const COMPLAINT_CATEGORIES = [
-  { keywords: ["water", "leak", "pipe", "tap", "clog"], category: "Plumbing", prefix: "PLUM" },
-  { keywords: ["light", "electricity", "fuse", "power", "switch", "wire"], category: "Electrical", prefix: "ELEC" },
-  { keywords: ["lift", "elevator", "escalator"], category: "Lift Maintenance", prefix: "LIFT" },
-  { keywords: ["clean", "dirt", "sweep", "dustbin", "garbage", "trash"], category: "Cleaning & Sanitation", prefix: "CLEAN" },
-  { keywords: ["security", "gate", "guard", "theft", "stranger"], category: "Security", prefix: "SEC" },
-  { keywords: ["noise", "loud", "music", "party", "bark", "drill"], category: "Noise Complaint", prefix: "NOISE" }
-];
+// AI Discovery Assistant Service for NeighbourAI
+import { eventService } from './eventService';
+import { listingService } from './listingService';
+import { rankingService } from './rankingService';
 
 export const aiService = {
-  // Query text processor
-  async processQuery(text, language = "English") {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
+  async processQuery(text, language = "English", userInterests = []) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     const cleanText = text.toLowerCase().trim();
 
     if (!cleanText) {
       return {
-        reply: "Please let me know how I can assist you today! 🎙️",
-        verified: false
+        reply: "Hey! I'm NeighbourAI. Ask me what is happening around you tonight, find apartments, PGs, or discover events! 🤖",
+        recommendations: []
       };
     }
 
-    // 1. Check for complaint patterns
-    const isComplaint = cleanText.includes("report") || 
-                        cleanText.includes("broken") || 
-                        cleanText.includes("not working") || 
-                        cleanText.includes("leak") || 
-                        cleanText.includes("leakage") || 
-                        cleanText.includes("clogged") || 
-                        cleanText.includes("noise") || 
-                        cleanText.includes("complaint");
+    // 1. Fetch data databases
+    const allEvents = await eventService.getEvents();
+    const rankedEvents = rankingService.rankItems(allEvents, userInterests);
+    const allListings = await listingService.getListings();
 
-    if (isComplaint) {
-      let matchedCategory = COMPLAINT_CATEGORIES.find(cat => 
-        cat.keywords.some(keyword => cleanText.includes(keyword))
-      ) || { category: "General Maintenance", prefix: "MAINT" };
+    // 2. Route by intents
+    const isHousingQuery = cleanText.includes("flat") || 
+                           cleanText.includes("room") || 
+                           cleanText.includes("housing") || 
+                           cleanText.includes("pg") || 
+                           cleanText.includes("rent") || 
+                           cleanText.includes("to-let") || 
+                           cleanText.includes("roommate");
 
-      const ticketId = `${matchedCategory.prefix}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const isTonightQuery = cleanText.includes("tonight") || 
+                           cleanText.includes("today") || 
+                           cleanText.includes("party") || 
+                           cleanText.includes("nightlife") || 
+                           cleanText.includes("do now");
+
+    const isFestivalQuery = cleanText.includes("puja") || 
+                            cleanText.includes("festival") || 
+                            cleanText.includes("bihu") || 
+                            cleanText.includes("cultural");
+
+    // 3. Response Generation
+    if (isHousingQuery) {
+      const roommatesOnly = cleanText.includes("roommate");
+      const pgOnly = cleanText.includes("pg");
+
+      let filteredListings = allListings;
+      if (roommatesOnly) filteredListings = allListings.filter(l => l.type === 'Roommate');
+      else if (pgOnly) filteredListings = allListings.filter(l => l.type === 'PG');
+      else filteredListings = allListings.filter(l => l.type === 'Flat' || l.type === 'Room');
 
       let reply = "";
       if (language === "Hindi") {
-        reply = `मैंने आपकी शिकायत दर्ज कर ली है। यह ${matchedCategory.category} श्रेणी में है। आपका टिकट नंबर #${ticketId} है। 🛠️`;
+        reply = `मुझे आपके लिए आस-पास कुछ बेहतरीन आवास विकल्प मिले हैं। नीचे देखें:`;
       } else if (language === "Hinglish") {
-        reply = `Maine aapki complaint register kar li hai. Ye ${matchedCategory.category} category me aati hai. Aapka ticket number #${ticketId} hai!`;
+        reply = `Mujhe aapke liye nearby kuch options mile hain. Check out these properties:`;
       } else if (language === "Assamese") {
-        reply = `মই আপোনাৰ অভিযোগ পঞ্জীয়ন কৰিছোঁ। এইটো ${matchedCategory.category} শ্ৰেণীৰ অধীনত পৰিব। আপোনাৰ টিকট নম্বৰ হৈছে #${ticketId}। 🛠️`;
+        reply = `মই আপোনাৰ বাবে ওচৰতে থকা কিছুমান ভাড়াতীয়া ঘৰ বিচাৰি পাইছোঁ। তলত চাওক:`;
       } else {
-        reply = `I've created a ticket for this ${matchedCategory.category} issue. Your ticket number is #${ticketId} 🛠️. Our team has been notified.`;
+        reply = `I found some housing options matching your query near your location. Here are the top suggestions:`;
       }
 
       return {
         reply,
-        verified: true,
-        ticketCreated: true,
-        ticketDetails: {
-          id: ticketId,
-          title: text.replace(/^(report|complaint|there is|someone is)\s+/i, ""),
-          category: matchedCategory.category,
-          status: "Received",
-          date: new Date().toLocaleDateString(),
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          technician: "Assigning soon..."
-        }
+        recommendations: filteredListings.map(l => ({ ...l, cardType: 'housing' }))
       };
     }
 
-    // 2. Check for rulebook Q&A patterns
-    for (const rule of SOCIETY_RULES) {
-      if (rule.keywords.some(keyword => cleanText.includes(keyword))) {
-        let reply = rule.answer;
-        if (language === "Hindi") {
-          reply = `नियमों के अनुसार: ${rule.answer}`;
-        } else if (language === "Hinglish") {
-          reply = `Society rules ke mutabik: ${rule.answer}`;
-        } else if (language === "Assamese") {
-          reply = `সমাজৰ নিয়ম অনুসৰি: ${rule.answer}`;
-        }
-
-        return {
-          reply,
-          verified: true,
-          ruleRef: rule.ruleRef,
-          originalQuestion: rule.question
-        };
+    if (isTonightQuery) {
+      const tonightEvents = rankedEvents.filter(evt => evt.date.toLowerCase() === 'tonight');
+      
+      let reply = "";
+      if (language === "Hindi") {
+        reply = `आज रात को आपके आस-पास होने वाले सबसे चर्चित कार्यक्रम ये हैं:`;
+      } else if (language === "Hinglish") {
+        reply = `Aaj raat ke liye trending parties and events ye rahe:`;
+      } else if (language === "Assamese") {
+        reply = `আজি নিশাটোৰ বাবে আপোনাৰ ওচৰত থকা আটাইতকৈ ধুনীয়া অনুষ্ঠানসমূহ:`;
+      } else {
+        reply = `Here is what is happening around you tonight! These events are trending with high Neighbour Scores:`;
       }
-    }
-
-    // 3. Routing to services
-    const isServiceQuery = cleanText.includes("plumber") ||
-                           cleanText.includes("electrician") ||
-                           cleanText.includes("laundry") ||
-                           cleanText.includes("cleaner") ||
-                           cleanText.includes("car wash") ||
-                           cleanText.includes("repair") ||
-                           cleanText.includes("carpenter");
-
-    if (isServiceQuery) {
-      let serviceType = "maintenance";
-      if (cleanText.includes("plumber")) serviceType = "Plumber";
-      else if (cleanText.includes("electrician")) serviceType = "Electrician";
-      else if (cleanText.includes("laundry")) serviceType = "Laundry";
-      else if (cleanText.includes("clean")) serviceType = "Cleaning";
-      else if (cleanText.includes("car")) serviceType = "Car Wash";
 
       return {
-        reply: `I found some local verified ${serviceType} providers available in your community. You can book them immediately through the Services tab! 🧑‍🔧`,
-        verified: true,
-        routeToTab: "services",
-        searchFilter: serviceType
+        reply,
+        recommendations: tonightEvents.map(e => ({ ...e, cardType: 'event' }))
       };
     }
 
-    // 4. Default Chat responses based on language
+    if (isFestivalQuery) {
+      const festEvents = rankedEvents.filter(evt => evt.category === 'Festivals' || evt.tags.includes('Culture'));
+
+      let reply = "";
+      if (language === "Hindi") {
+        reply = `आस-पास होने वाले सांस्कृतिक और त्योहारों के कार्यक्रम:`;
+      } else if (language === "Hinglish") {
+        reply = `Apne nearby festival aur cultural events check kijiye:`;
+      } else if (language === "Assamese") {
+        reply = `ওচৰ-পাজৰে থকা সাংস্কৃতিক আৰু উৎসৱৰ কাৰ্যসূচীসমূহ:`;
+      } else {
+        reply = `Discover cultural programs, Pujas, and local festivals happening in your city:`;
+      }
+
+      return {
+        reply,
+        recommendations: festEvents.map(e => ({ ...e, cardType: 'event' }))
+      };
+    }
+
+    // Default recommendation: general trending near you
+    let reply = "";
     if (language === "Hindi") {
-      return {
-        reply: "मुझे आपके सवाल का सही जवाब नहीं मिला। क्या आप शिकायत दर्ज करना चाहते हैं, या किसी सेवा के बारे में पूछना चाहते हैं?",
-        verified: false
-      };
+      reply = `यहाँ आज आपके शहर में सबसे अधिक ट्रेंड करने वाली चीजें हैं:`;
     } else if (language === "Hinglish") {
-      return {
-        reply: "Mujhe iska answer nahi mila. Kya aap koi issue report karna chahte hain, ya help chaiye?",
-        verified: false
-      };
+      reply = `Ye rahe aapki city me sabse zyada trending happening right now:`;
     } else if (language === "Assamese") {
-      return {
-        reply: "মই আপোনাৰ প্ৰশ্নৰ সঠিক উত্তৰ বিচাৰি নাপালোঁ। আপুনি কিবা অভিযোগ কৰিব বিচাৰে নেকি?",
-        verified: false
-      };
+      reply = `আপোনাৰ চহৰত বৰ্তমান ট্ৰেণ্ডিং হৈ থকা কিছুমান অনুষ্ঠান:`;
+    } else {
+      reply = `I ranked the top activities and listings around you. Check out these highly recommended options:`;
     }
 
     return {
-      reply: "I couldn't find a specific answer in the rulebook, but I can register a complaint or help you find a service technician. What would you like me to do? 🏡",
-      verified: false
+      reply,
+      recommendations: rankedEvents.slice(0, 3).map(e => ({ ...e, cardType: 'event' }))
     };
-  },
-
-  // Rulebook natural search
-  async searchRulebook(query) {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    const cleanQuery = query.toLowerCase();
-
-    const matches = SOCIETY_RULES.filter(rule =>
-      rule.keywords.some(keyword => cleanQuery.includes(keyword)) ||
-      rule.question.toLowerCase().includes(cleanQuery) ||
-      rule.answer.toLowerCase().includes(cleanQuery)
-    );
-
-    return matches;
   }
 };

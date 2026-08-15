@@ -1,30 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, Send, Globe, Check, AlertCircle, ArrowLeft, ArrowUpRight } from 'lucide-react';
+import { Mic, Send, Globe, Star, Check, ArrowRight } from 'lucide-react';
 import { aiService } from '../services/aiService';
-import { ticketService } from '../services/ticketService';
 
-export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onTicketCreated }) {
+export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onQuickActionFilter, userProfile }) {
   const [messages, setMessages] = useState([
     {
       id: 'msg-init-01',
       sender: 'ai',
-      text: "Hi! I'm NeighbourAI. Ask me anything about your home, community, or neighbourhood. 🏡\n\nTry asking about gym timings, report a water leakage, or request a plumber!",
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      verified: true
+      text: "Hey! I'm NeighbourAI. Ask me anything about what's happening around you. 🤖\n\nTry asking: 'What should I do tonight?', 'Puja nearby', or 'Find a flatmate near Beltola'!",
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [language, setLanguage] = useState('English');
+  const [language, setLanguage] = useState(userProfile.language || 'English');
   const chatEndRef = useRef(null);
 
-  // Auto-scroll to bottom of chat
+  // Auto-scroll to bottom
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  // Handle pre-filled search queries from HomeScreen
+  // Handle prefill inputs
   useEffect(() => {
     if (prefill && prefill.text) {
       setInput(prefill.text);
@@ -51,33 +49,21 @@ export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onTic
     setIsTyping(true);
 
     try {
-      // Process with AI Service
-      const result = await aiService.processQuery(textToSend, language);
+      const result = await aiService.processQuery(textToSend, language, userProfile.interests);
       
       setIsTyping(false);
 
-      // Add AI reply
       const aiReply = {
         id: `msg-ai-${Date.now()}`,
         sender: 'ai',
         text: result.reply,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        verified: result.verified,
-        ruleRef: result.ruleRef,
-        routeToTab: result.routeToTab,
-        searchFilter: result.searchFilter
+        recommendations: result.recommendations
       };
 
       setMessages(prev => [...prev, aiReply]);
-
-      // If a ticket was created
-      if (result.ticketCreated && result.ticketDetails) {
-        const newTicket = await ticketService.createTicket(result.ticketDetails);
-        onTicketCreated(newTicket);
-      }
-
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
       setIsTyping(false);
     }
   };
@@ -85,36 +71,43 @@ export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onTic
   const handleMicClick = () => {
     if (isListening) return;
     setIsListening(true);
-    
-    // Simulate voice capture
+
     setTimeout(() => {
       setIsListening(false);
       const voicePrompts = [
-        "Is pets allowed in the central garden?",
-        "Street light near Block B is broken",
-        "Book a laundry pickup from Express laundry",
-        "Can guests use the swimming pool?"
+        "What is happening tonight?",
+        "Find a 2BHK flat under 20000",
+        "Is there any Bihu puja nearby?",
+        "Show me trending gigs this weekend"
       ];
-      const randomPrompt = voicePrompts[Math.floor(Math.random() * voicePrompts.length)];
-      setInput(randomPrompt);
+      setInput(voicePrompts[Math.floor(Math.random() * voicePrompts.length)]);
     }, 2000);
+  };
+
+  const handleRecommendationClick = (rec) => {
+    if (rec.cardType === 'event') {
+      onQuickActionFilter({ openEventId: rec.id });
+    } else {
+      onQuickActionFilter({ openListingId: rec.id });
+    }
+    setTab('discover');
   };
 
   return (
     <div className="screen-content" style={{ paddingBottom: '100px', height: '100%' }}>
       
-      {/* Top Header & Language Selector */}
+      {/* Top Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
         <div>
           <h2 style={{ fontSize: '20px', fontWeight: '800' }}>NeighbourAI 🤖</h2>
-          <p style={{ fontSize: '11px', color: 'var(--text-sub)' }}>Your community assistant</p>
+          <p style={{ fontSize: '11px', color: 'var(--text-sub)' }}>Local Discovery Copilot</p>
         </div>
         
-        {/* Language selector chip */}
-        <div className="clay-input-container" style={{ padding: '4px 8px', borderRadius: '12px', boxShadow: '2px 2px 6px rgba(8,127,140,0.05)' }}>
+        {/* Language select */}
+        <div className="clay-input-container" style={{ padding: '4px 8px', borderRadius: '12px' }}>
           <Globe size={13} color="var(--deep-teal)" />
           <select 
-            style={{ border: 'none', background: 'none', outline: 'none', fontSize: '11px', fontWeight: '700', color: 'var(--text-main)', cursor: 'pointer' }}
+            style={{ border: 'none', background: 'none', fontSize: '11px', fontWeight: '700', color: 'var(--text-main)', cursor: 'pointer' }}
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
           >
@@ -126,18 +119,18 @@ export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onTic
         </div>
       </div>
 
-      {/* Mascot Section */}
+      {/* Mascot Active Orb */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
         <div className="ai-orb-container">
           <div className="ai-orb-glow"></div>
           <div className="ai-orb"></div>
         </div>
-        <span style={{ fontSize: '12px', color: 'var(--text-sub)', fontWeight: '600', letterSpacing: '0.5px' }}>
-          {isListening ? 'LISTENING TO YOU...' : 'NEIGHBOURAI ACTIVE'}
+        <span style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: '700', letterSpacing: '0.5px' }}>
+          {isListening ? 'LISTENING...' : 'ASK ME WHAT\'S HAPPENING'}
         </span>
       </div>
 
-      {/* Chat Messages Panel */}
+      {/* Chat Messages */}
       <div 
         className="custom-scroll"
         style={{ 
@@ -147,7 +140,7 @@ export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onTic
           overflowY: 'auto', 
           display: 'flex', 
           flexDirection: 'column', 
-          gap: '12px', 
+          gap: '14px', 
           padding: '10px 4px'
         }}
       >
@@ -156,10 +149,12 @@ export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onTic
             key={msg.id} 
             style={{ 
               display: 'flex', 
-              justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+              flexDirection: 'column',
+              alignItems: msg.sender === 'user' ? 'flex-end' : 'flex-start',
               width: '100%'
             }}
           >
+            {/* Bubble */}
             <div 
               className="clay-card" 
               style={{ 
@@ -169,59 +164,57 @@ export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onTic
                 borderTopRightRadius: msg.sender === 'user' ? '4px' : '20px',
                 borderTopLeftRadius: msg.sender === 'ai' ? '4px' : '20px',
                 backgroundColor: msg.sender === 'user' ? 'var(--primary-cyan)' : '#FFFFFF',
-                boxShadow: msg.sender === 'user' 
-                  ? '4px 4px 8px rgba(22, 217, 227, 0.2), inset 2px 2px 4px rgba(255,255,255,0.4), inset -2px -2px 4px rgba(8,127,140,0.1)' 
-                  : 'var(--clay-shadow-card)',
                 color: 'var(--text-main)',
                 fontSize: '13.5px',
-                lineHeight: '1.5'
+                lineHeight: '1.5',
+                textAlign: 'left'
               }}
             >
-              {/* Text Body */}
               <p style={{ whiteSpace: 'pre-line' }}>{msg.text}</p>
-              
-              {/* Extra Details (Rulebook Verification Badge) */}
-              {msg.verified && msg.sender === 'ai' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: 'var(--deep-teal)', fontWeight: '700', marginTop: '8px', padding: '4px 6px', background: 'var(--bg-light)', borderRadius: '8px' }}>
-                  <Check size={10} strokeWidth={3} />
-                  Verified Community Info
-                  {msg.ruleRef && <span style={{ opacity: 0.6, marginLeft: 'auto' }}>{msg.ruleRef}</span>}
-                </div>
-              )}
-
-              {/* Service redirect chip */}
-              {msg.routeToTab && (
-                <button
-                  onClick={() => setTab(msg.routeToTab)}
-                  className="clay-btn"
-                  style={{
-                    padding: '4px 8px',
-                    borderRadius: '8px',
-                    fontSize: '10px',
-                    backgroundColor: 'var(--purple)',
-                    color: '#FFFFFF',
-                    marginTop: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    border: 'none',
-                    width: 'fit-content'
-                  }}
-                >
-                  Go to Services
-                  <ArrowUpRight size={10} />
-                </button>
-              )}
-
-              {/* Time stamp */}
               <div style={{ fontSize: '9px', opacity: 0.5, textAlign: 'right', marginTop: '4px' }}>
                 {msg.time}
               </div>
             </div>
+
+            {/* Recommendations clickable cards inside chat */}
+            {msg.sender === 'ai' && msg.recommendations && msg.recommendations.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '85%', marginTop: '8px' }}>
+                {msg.recommendations.map((rec) => (
+                  <div 
+                    key={rec.id}
+                    onClick={() => handleRecommendationClick(rec)}
+                    className="clay-card clay-card-interactive"
+                    style={{ 
+                      padding: '8px', 
+                      display: 'flex', 
+                      gap: '10px', 
+                      backgroundColor: '#F9FFFF', 
+                      border: '1px solid rgba(22, 217, 227, 0.15)',
+                      textAlign: 'left',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <img src={rec.image} alt={rec.title} style={{ width: '50px', height: '50px', borderRadius: '10px', objectFit: 'cover' }} />
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <h4 style={{ fontSize: '12px', fontWeight: '700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }}>
+                        {rec.title}
+                      </h4>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', fontSize: '10px', color: 'var(--text-sub)' }}>
+                        <span>📍 {rec.distance}</span>
+                        {rec.cardType === 'event' ? (
+                          <span style={{ color: 'var(--deep-teal)', fontWeight: '700' }}>⭐ {rec.neighbourScore}</span>
+                        ) : (
+                          <span style={{ color: 'var(--deep-teal)', fontWeight: '700' }}>₹{rec.rent}/mo</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
 
-        {/* Typing skeleton */}
         {isTyping && (
           <div style={{ display: 'flex', justifyContent: 'flex-start', width: '100%' }}>
             <div className="clay-card" style={{ padding: '12px 18px', borderRadius: '20px', borderTopLeftRadius: '4px', backgroundColor: '#FFFFFF' }}>
@@ -236,7 +229,7 @@ export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onTic
         <div ref={chatEndRef} />
       </div>
 
-      {/* Interactive Input Bar */}
+      {/* Input Bar */}
       <div 
         className="clay-card" 
         style={{ 
@@ -251,7 +244,6 @@ export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onTic
           zIndex: 10
         }}
       >
-        {/* Mic trigger */}
         <button 
           onClick={handleMicClick}
           className="clay-btn" 
@@ -268,7 +260,6 @@ export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onTic
           <Mic size={18} />
         </button>
 
-        {/* Input */}
         <input 
           type="text" 
           className="clay-input" 
@@ -279,7 +270,6 @@ export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onTic
           disabled={isListening}
         />
 
-        {/* Send button */}
         <button 
           onClick={() => handleSend()}
           className="clay-btn clay-btn-primary" 
@@ -290,7 +280,6 @@ export default function AIAssistantScreen({ prefill, clearPrefill, setTab, onTic
         </button>
       </div>
 
-      {/* Simple styling injection for typing skeleton */}
       <style>{`
         @keyframes bounce {
           from { transform: translateY(0); }

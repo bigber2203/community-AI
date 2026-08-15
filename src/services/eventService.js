@@ -1,121 +1,136 @@
-// Event Discovery Service for NeighbourAI
+// Global Event Discovery Service for NeighbourAI
 
-const mockEvents = [
+let mockEvents = [
   {
-    id: "evt-comedy-01",
-    title: "Saturday Stand-up Comedy Night 🎤",
-    description: "Prepare for a night of non-stop laughter with regional and national stand-up sensations. Food and beverages will be available at the venue.",
-    date: "Saturday, August 22",
-    time: "07:00 PM - 09:30 PM",
-    location: "The Laugh Club, Zoo Road, Guwahati",
+    id: "evt-nightlife-01",
+    title: "Summer Beats Electronic Fest 🎧",
+    description: "Get ready for the hottest electronic dance party tonight. Featuring top regional DJs and premium laser projection mappings. Food and beverages will be available.",
+    date: "Tonight",
+    time: "09:00 PM - 02:00 AM",
+    location: "The Laugh Club Lounge, Zoo Road, Guwahati",
+    approximateArea: "Zoo Road, Guwahati",
     distance: "2.4 km away",
-    price: "₹299 onwards",
-    category: "Comedy",
-    image: "https://images.unsplash.com/photo-1585699324551-f6c309eed262?auto=format&fit=crop&w=600&q=80",
+    price: "₹500 onwards",
+    category: "Nightlife",
+    image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=600&q=80",
     featured: true,
-    organizer: "Guwahati Comedy Collective",
-    availableSeats: 34,
-    attendees: 142,
-    coordinates: { x: 45, y: 35 }, // Mock coordinates for custom map screen (0-100 scale)
-    communityAttendees: [
-      { name: "Amit Baruah", avatar: "👨‍💻", flat: "A-402" },
-      { name: "Prerna Sen", avatar: "👩‍🎨", flat: "C-105" },
-      { name: "Jatin Kalita", avatar: "👨‍🍳", flat: "B-201" }
-    ]
+    organizer: "Guwahati Nightlife Club",
+    availableSeats: 45,
+    attendees: 347,
+    interestedCount: 347,
+    saves: 85,
+    rating: 4.9,
+    verificationStatus: "Verified Organizer",
+    privacyLevel: "Public",
+    coordinates: { x: 42, y: 35 },
+    tags: ["Nightlife", "Music", "Party"]
   },
   {
-    id: "evt-music-01",
-    title: "Acoustic Night & Rooftop Dinner 🎵",
-    description: "Enjoy a soothing evening of acoustic music under the stars with live acoustic guitar and delicious buffet cuisine.",
-    date: "Sunday, August 23",
-    time: "08:00 PM - 11:00 PM",
-    location: "Skyline Cafe, Christian Basti",
-    distance: "1.8 km away",
-    price: "₹499 onwards",
-    category: "Music",
-    image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=600&q=80",
-    featured: false,
-    organizer: "Skyline Lounge & Grill",
-    availableSeats: 15,
-    attendees: 88,
-    coordinates: { x: 60, y: 55 },
-    communityAttendees: [
-      { name: "Bigyat Sharma", avatar: "👋", flat: "B-304" },
-      { name: "Rahul Das", avatar: "👨‍💼", flat: "D-102" }
-    ]
-  },
-  {
-    id: "evt-workshop-01",
-    title: "Pottery & Clay Art Workshop 🎨",
-    description: "Get your hands dirty and learn the peaceful art of clay moulding. All materials and light snacks are provided. Take home your own creation!",
-    date: "Sunday, August 23",
-    time: "11:00 AM - 02:00 PM",
-    location: "The Clay Studio, Geetanagar",
-    distance: "3.2 km away",
-    price: "Free for residents",
-    category: "Workshops",
-    image: "https://images.unsplash.com/photo-1565192647048-f997ded87958?auto=format&fit=crop&w=600&q=80",
-    featured: false,
-    organizer: "Creative Arts Guild",
-    availableSeats: 8,
-    attendees: 30,
-    coordinates: { x: 30, y: 70 },
-    communityAttendees: [
-      { name: "Devi Kakati", avatar: "👩‍⚕️", flat: "A-501" },
-      { name: "Prerna Sen", avatar: "👩‍🎨", flat: "C-105" }
-    ]
-  },
-  {
-    id: "evt-food-01",
-    title: "Assamese Food & Heritage Fest 🍔",
-    description: "Celebrate local culinary history! Sample traditional duck dishes, pitika stalls, and standard community pitha items in a modern food festival setup.",
-    date: "Friday, August 28",
-    time: "05:00 PM - 10:00 PM",
-    location: "Heritage Gardens, G.S. Road",
+    key: "evt-festival-01",
+    id: "evt-festival-01",
+    title: "Bhogali Bihu Fest & Food Bazaar 🪔",
+    description: "Experience our rich heritage and Assamese cultural programs. Over 40 traditional food stalls, handloom exhibitions, bihu dances, and live local instrumentation.",
+    date: "This Weekend",
+    time: "10:00 AM - 10:00 PM",
+    location: "Heritage Gardens, G.S. Road, Guwahati",
+    approximateArea: "G.S. Road, Guwahati",
     distance: "0.5 km away",
     price: "Free Entry",
-    category: "Food",
-    image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80",
+    category: "Festivals",
+    image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=600&q=80",
     featured: false,
-    organizer: "Assam Food Board",
-    availableSeats: 500,
+    organizer: "Assam Tourism Department",
+    availableSeats: 2500,
     attendees: 1250,
+    interestedCount: 840,
+    saves: 210,
+    rating: 4.8,
+    verificationStatus: "Verified Event",
+    privacyLevel: "Public",
     coordinates: { x: 15, y: 20 },
-    communityAttendees: [
-      { name: "Bigyat Sharma", avatar: "👋", flat: "B-304" },
-      { name: "Amit Baruah", avatar: "👨‍💻", flat: "A-402" },
-      { name: "Nisha Sarma", avatar: "👩‍🏫", flat: "C-302" }
-    ]
+    tags: ["Festivals", "Culture", "Food"]
+  },
+  {
+    id: "evt-private-01",
+    title: "🔒 Secret Rooftop House Party & Jam Session",
+    description: "Chilled acoustic sessions, backyard barbecue, and board games on our terrace. Approved list only. RSVP to request an invitation.",
+    date: "Tonight",
+    time: "08:00 PM - 11:30 PM",
+    location: "Beltola (Address revealed upon host approval)",
+    approximateArea: "Beltola, Guwahati (Approximate Area)",
+    distance: "3.2 km away",
+    price: "₹150 (BYOB)",
+    category: "Social",
+    image: "https://images.unsplash.com/photo-1496337589254-7e19d01eae44?auto=format&fit=crop&w=600&q=80",
+    featured: false,
+    organizer: "Siddharth (Sunshine Resident)",
+    availableSeats: 12,
+    attendees: 18,
+    interestedCount: 52,
+    saves: 14,
+    rating: 4.6,
+    verificationStatus: "Community Verified",
+    privacyLevel: "Private",
+    coordinates: { x: 65, y: 70 },
+    tags: ["Social", "Music", "Party"]
+  },
+  {
+    id: "evt-comedy-01",
+    title: "Stand-Up Comedy Special with Abhinav 🎭",
+    description: "An evening of hilarious observation comedy and crowd work. Uncensored, bachelors welcome. Unlimited laughs.",
+    date: "This Weekend",
+    time: "07:00 PM - 09:00 PM",
+    location: "Lounge 51, Christian Basti, Guwahati",
+    approximateArea: "Christian Basti, Guwahati",
+    distance: "1.8 km away",
+    price: "₹299 onwards",
+    category: "Entertainment",
+    image: "https://images.unsplash.com/photo-1585699324551-f6c309eed262?auto=format&fit=crop&w=600&q=80",
+    featured: false,
+    organizer: "Humour Guild",
+    availableSeats: 30,
+    attendees: 110,
+    interestedCount: 112,
+    saves: 30,
+    rating: 4.4,
+    verificationStatus: "Verified Organizer",
+    privacyLevel: "Public",
+    coordinates: { x: 50, y: 56 },
+    tags: ["Entertainment", "Comedy"]
   },
   {
     id: "evt-sports-01",
-    title: "Weekend Football Match (Residents vs Neighbours) 🏃",
-    description: "Our community's monthly friendly soccer match. Bring your boots and play, or join us to cheer on the team!",
-    date: "Saturday, August 22",
-    time: "07:30 AM - 09:30 AM",
-    location: "Sunshine Turf, RG Baruah Rd",
-    distance: "0.2 km away",
-    price: "Free",
+    title: "Guwahati Football Derby & Screening 🏏",
+    description: "Resident sports matchup screening. Live large projector broadcast, food trucks, and friendly turf tournament matches beforehand.",
+    date: "This Weekend",
+    time: "04:00 PM - 08:00 PM",
+    location: "RG Baruah Turf, Guwahati",
+    approximateArea: "RG Baruah Rd, Guwahati",
+    distance: "1.1 km away",
+    price: "Free Entry",
     category: "Sports",
     image: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=600&q=80",
     featured: false,
-    organizer: "Sunshine Residency Sports Club",
-    availableSeats: 12,
-    attendees: 22,
-    coordinates: { x: 10, y: 12 },
-    communityAttendees: [
-      { name: "Amit Baruah", avatar: "👨‍💻", flat: "A-402" },
-      { name: "Jatin Kalita", avatar: "👨‍🍳", flat: "B-201" }
-    ]
+    organizer: "Guwahati United Sports",
+    availableSeats: 400,
+    interestedCount: 310,
+    saves: 45,
+    rating: 4.7,
+    verificationStatus: "Verified Event",
+    privacyLevel: "Public",
+    coordinates: { x: 30, y: 25 },
+    tags: ["Sports", "Social"]
   }
 ];
 
 export const eventService = {
   async getEvents(category = "All", query = "") {
     let filtered = [...mockEvents];
-    if (category !== "All") {
-      filtered = filtered.filter(evt => evt.category === category);
+    
+    if (category && category !== "All") {
+      filtered = filtered.filter(evt => evt.category.toLowerCase() === category.toLowerCase());
     }
+    
     if (query) {
       const q = query.toLowerCase();
       filtered = filtered.filter(evt =>
@@ -127,11 +142,37 @@ export const eventService = {
     return filtered;
   },
 
-  async getEventById(id) {
-    return mockEvents.find(evt => evt.id === id) || null;
-  },
-
   async getFeaturedEvent() {
     return mockEvents.find(evt => evt.featured) || mockEvents[0];
+  },
+
+  async addEvent(evt) {
+    const newEvent = {
+      id: `evt-${Math.floor(100 + Math.random() * 900)}`,
+      title: evt.title || "Local Gathering",
+      description: evt.description || "",
+      date: evt.date || "Today",
+      time: evt.time || "08:00 PM",
+      location: evt.privacyLevel === 'Private' ? `${evt.approximateArea || 'Beltola'} (Revealed on host approval)` : (evt.location || "Guwahati"),
+      approximateArea: evt.approximateArea || evt.location || "Guwahati",
+      distance: "1.2 km away",
+      price: evt.price || "Free Entry",
+      category: evt.category || "Social",
+      image: evt.image || "https://images.unsplash.com/photo-1496337589254-7e19d01eae44?auto=format&fit=crop&w=600&q=80",
+      featured: false,
+      organizer: evt.organizer || "Community Organizer",
+      availableSeats: parseInt(evt.capacity) || 50,
+      attendees: 0,
+      interestedCount: 0,
+      saves: 0,
+      rating: 5.0,
+      verificationStatus: "Unverified",
+      privacyLevel: evt.privacyLevel || "Public",
+      coordinates: evt.coordinates || { x: 45, y: 45 },
+      tags: [evt.category || "Social", "Local"]
+    };
+
+    mockEvents = [newEvent, ...mockEvents];
+    return newEvent;
   }
 };

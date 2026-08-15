@@ -1,67 +1,151 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Calendar, Heart, Share2, Map, List, Check } from 'lucide-react';
+import { Search, MapPin, Calendar, Heart, Share2, Star, Check, Phone, Shield } from 'lucide-react';
 import { eventService } from '../services/eventService';
+import { listingService } from '../services/listingService';
+import { rankingService } from '../services/rankingService';
 
-export default function DiscoverScreen({ userProfile }) {
+export default function DiscoverScreen({ userProfile, quickFilters, clearQuickFilters }) {
   const [events, setEvents] = useState([]);
-  const [featuredEvent, setFeaturedEvent] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [listings, setListings] = useState([]);
+  
+  // States
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState('list'); // 'list' or 'map'
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [selectedListing, setSelectedListing] = useState(null);
+  
   const [interestedEvents, setInterestedEvents] = useState(new Set());
-  const [registeredEvents, setRegisteredEvents] = useState(new Set());
+  const [joinedPrivateEvents, setJoinedPrivateEvents] = useState(new Set());
+  const [savedListings, setSavedListings] = useState(new Set());
 
-  const categories = ['All', 'Comedy', 'Music', 'Workshops', 'Food', 'Sports', 'Social'];
+  const categories = [
+    'All', 'Trending', 'Events', 'Nightlife', 'Music', 'Festivals', 'Entertainment', 'Sports', 'Social', 'Housing', 'Roommate'
+  ];
 
   useEffect(() => {
     async function loadData() {
-      const evts = await eventService.getEvents(selectedCategory, searchQuery);
-      setEvents(evts);
-      const feat = await eventService.getFeaturedEvent();
-      setFeaturedEvent(feat);
+      // Load events
+      const allEvts = await eventService.getEvents();
+      const rankedEvts = rankingService.rankItems(allEvts, userProfile.interests);
+      
+      // Load housing
+      const allListings = await listingService.getListings();
+      const rankedListings = rankingService.rankItems(allListings, userProfile.interests);
+
+      setEvents(rankedEvts);
+      setListings(rankedListings);
     }
     loadData();
-  }, [selectedCategory, searchQuery]);
+  }, [userProfile.interests]);
+
+  // Deep linking logic from HomeScreen quick actions
+  useEffect(() => {
+    if (quickFilters) {
+      if (quickFilters.category) {
+        setSelectedCategory(quickFilters.category);
+      } else if (quickFilters.tonightOnly) {
+        setSelectedCategory('Events');
+        setSearchQuery('tonight');
+      } else if (quickFilters.trendingOnly) {
+        setSelectedCategory('Trending');
+      } else if (quickFilters.type) {
+        setSelectedCategory(quickFilters.type === 'Flat' ? 'Housing' : 'Roommate');
+      }
+
+      // Handle direct item detail openings
+      if (quickFilters.openEventId) {
+        const findEvt = events.find(e => e.id === quickFilters.openEventId);
+        if (findEvt) setSelectedEvent(findEvt);
+      }
+      if (quickFilters.openListingId) {
+        const findLst = listings.find(l => l.id === quickFilters.openListingId);
+        if (findLst) setSelectedListing(findLst);
+      }
+
+      clearQuickFilters();
+    }
+  }, [quickFilters, events, listings]);
 
   const toggleInterest = (id) => {
     const updated = new Set(interestedEvents);
-    if (updated.has(id)) {
-      updated.delete(id);
-    } else {
-      updated.add(id);
-    }
+    if (updated.has(id)) updated.delete(id);
+    else updated.add(id);
     setInterestedEvents(updated);
   };
 
-  const registerEvent = (id) => {
-    const updated = new Set(registeredEvents);
+  const requestJoinPrivateEvent = (id) => {
+    const updated = new Set(joinedPrivateEvents);
     updated.add(id);
-    setRegisteredEvents(updated);
+    setJoinedPrivateEvents(updated);
   };
+
+  const toggleSaveListing = (id) => {
+    const updated = new Set(savedListings);
+    if (updated.has(id)) updated.delete(id);
+    else updated.add(id);
+    setSavedListings(updated);
+  };
+
+  // Filters logic
+  const getFilteredItems = () => {
+    let filteredEvents = [...events];
+    let filteredListings = [...listings];
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filteredEvents = filteredEvents.filter(e => e.title.toLowerCase().includes(q) || e.description.toLowerCase().includes(q) || e.location.toLowerCase().includes(q));
+      filteredListings = filteredListings.filter(l => l.title.toLowerCase().includes(q) || l.description.toLowerCase().includes(q) || l.locationName.toLowerCase().includes(q));
+    }
+
+    if (selectedCategory === 'Trending') {
+      // Sort by score
+      return { events: filteredEvents.slice(0, 3), listings: [] };
+    }
+
+    if (selectedCategory === 'Events') {
+      return { events: filteredEvents, listings: [] };
+    }
+
+    if (selectedCategory === 'Nightlife' || selectedCategory === 'Music' || selectedCategory === 'Festivals' || selectedCategory === 'Entertainment' || selectedCategory === 'Sports' || selectedCategory === 'Social') {
+      return { events: filteredEvents.filter(e => e.category === selectedCategory), listings: [] };
+    }
+
+    if (selectedCategory === 'Housing') {
+      return { events: [], listings: filteredListings.filter(l => l.type === 'Flat' || l.type === 'Room' || l.type === 'PG') };
+    }
+
+    if (selectedCategory === 'Roommate') {
+      return { events: [], listings: filteredListings.filter(l => l.type === 'Roommate') };
+    }
+
+    // 'All' displays everything
+    return { events: filteredEvents, listings: filteredListings };
+  };
+
+  const { events: displayEvents, listings: displayListings } = getFilteredItems();
 
   return (
     <div className="screen-content" style={{ paddingBottom: '90px' }}>
       
       {/* Title */}
       <div style={{ marginTop: '10px' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: '800' }}>Discover Around You ✨</h2>
-        <p style={{ fontSize: '13px', color: 'var(--text-sub)' }}>Something exciting is always happening nearby.</p>
+        <h2 style={{ fontSize: '24px', fontWeight: '800' }}>Discover Around You 🔎</h2>
+        <p style={{ fontSize: '13px', color: 'var(--text-sub)' }}>Real-time events, housing, & community hubs.</p>
       </div>
 
-      {/* Search Input */}
+      {/* Large Search Bar */}
       <div className="clay-input-container">
         <Search size={18} color="var(--deep-teal)" />
         <input 
           type="text" 
           className="clay-input" 
-          placeholder="Search events, places, activities..." 
+          placeholder="Search parties, events, festivals, homes..." 
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
 
-      {/* Category Horizontal Pills */}
+      {/* Category Horizontal Filter Chips */}
       <div 
         className="custom-scroll" 
         style={{ 
@@ -69,8 +153,7 @@ export default function DiscoverScreen({ userProfile }) {
           gap: '10px', 
           overflowX: 'auto', 
           padding: '4px 0',
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none'
+          scrollbarWidth: 'none'
         }}
       >
         {categories.map((cat, idx) => (
@@ -96,228 +179,99 @@ export default function DiscoverScreen({ userProfile }) {
         ))}
       </div>
 
-      {/* View Mode Toggle (Map / List) */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-        <button
-          onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')}
-          className="clay-btn"
-          style={{
-            padding: '8px 12px',
-            fontSize: '12px',
-            borderRadius: '14px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            boxShadow: '3px 3px 6px rgba(8, 127, 140, 0.06)'
-          }}
-        >
-          {viewMode === 'list' ? (
-            <>
-              <Map size={14} color="var(--deep-teal)" />
-              <span>Map View</span>
-            </>
-          ) : (
-            <>
-              <List size={14} color="var(--deep-teal)" />
-              <span>List View</span>
-            </>
-          )}
-        </button>
-      </div>
-
-      {/* Main Content Areas */}
-      {viewMode === 'list' ? (
-        <>
-          {/* Featured Event Card */}
-          {featuredEvent && !searchQuery && selectedCategory === 'All' && (
-            <div 
-              className="clay-card clay-card-interactive" 
-              onClick={() => setSelectedEvent(featuredEvent)}
-              style={{ 
-                padding: '0', 
-                overflow: 'hidden', 
-                borderRadius: '28px', 
-                border: '1px solid rgba(255, 143, 207, 0.2)',
-                cursor: 'pointer'
-              }}
-            >
-              <div style={{ position: 'relative', height: '160px', overflow: 'hidden' }}>
-                <img 
-                  src={featuredEvent.image} 
-                  alt={featuredEvent.title} 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-                <span 
-                  style={{ 
-                    position: 'absolute', 
-                    top: '12px', 
-                    left: '12px', 
-                    backgroundColor: 'var(--pink)', 
-                    color: '#FFFFFF', 
-                    padding: '4px 10px', 
-                    borderRadius: '10px', 
-                    fontSize: '10px', 
-                    fontWeight: '700',
-                    fontFamily: 'var(--font-headings)'
-                  }}
-                >
-                  FEATURED EVENT
-                </span>
-              </div>
-              <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}>
-                <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--pink)', textTransform: 'uppercase' }}>
-                  {featuredEvent.category}
-                </span>
-                <h3 style={{ fontSize: '18px', fontWeight: '800' }}>
-                  {featuredEvent.title}
-                </h3>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-sub)', marginTop: '4px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Calendar size={13} />
-                    <span>{featuredEvent.date}</span>
-                  </div>
-                  <span>{featuredEvent.distance}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
-                  <span style={{ fontWeight: '800', fontSize: '15px', color: 'var(--deep-teal)' }}>
-                    {featuredEvent.price}
-                  </span>
-                  <button className="clay-btn clay-btn-primary" style={{ padding: '8px 14px', borderRadius: '12px', fontSize: '12px' }}>
-                    View Event
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Regular Events List */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <h4 style={{ fontSize: '15px', textAlign: 'left', marginTop: '10px' }}>
-              {selectedCategory === 'All' ? 'Upcoming Events' : `${selectedCategory} Events`}
-            </h4>
-            
-            {events.length === 0 ? (
-              <p style={{ textAlign: 'center', padding: '20px', color: 'var(--text-sub)' }}>No events found for this filter.</p>
-            ) : (
-              events.map((evt) => (
-                <div 
-                  key={evt.id} 
-                  className="clay-card clay-card-interactive" 
-                  onClick={() => setSelectedEvent(evt)}
-                  style={{ display: 'flex', gap: '12px', padding: '12px', borderRadius: '20px', cursor: 'pointer', textAlign: 'left' }}
-                >
-                  <img 
-                    src={evt.image} 
-                    alt={evt.title} 
-                    style={{ width: '80px', height: '80px', borderRadius: '14px', objectFit: 'cover' }}
-                  />
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div>
-                      <span style={{ fontSize: '10px', fontWeight: '700', color: evt.featured ? 'var(--pink)' : 'var(--deep-teal)', textTransform: 'uppercase' }}>
-                        {evt.category}
-                      </span>
-                      <h4 style={{ fontSize: '14px', fontWeight: '700', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                        {evt.title}
-                      </h4>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-sub)' }}>
-                      <span>{evt.date.split(',')[0]}</span>
-                      <span>{evt.distance}</span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </>
-      ) : (
-        /* Map Mockup View */
-        <div className="clay-card" style={{ padding: '0', overflow: 'hidden', height: '360px', position: 'relative', background: '#F0FDFD', display: 'flex', flexDirection: 'column', border: '1px solid rgba(8, 127, 140, 0.1)' }}>
-          {/* Simulated Map Canvas */}
-          <div style={{ flex: 1, position: 'relative', background: 'radial-gradient(circle, #E1F8F9 10%, #D4F7F7 70%, #C4ECEC 100%)', overflow: 'hidden' }}>
-            
-            {/* Map Roads & Blocks Overlay Grid (Styled like clay) */}
-            <div style={{ position: 'absolute', width: '150%', height: '150%', border: '4px solid rgba(255,255,255,0.4)', borderRadius: '50%', top: '-25%', left: '-25%', pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', width: '100%', height: '40px', backgroundColor: 'rgba(255,255,255,0.3)', top: '40%', transform: 'rotate(-15deg)', pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', width: '40px', height: '100%', backgroundColor: 'rgba(255,255,255,0.3)', left: '30%', transform: 'rotate(10deg)', pointerEvents: 'none' }} />
-
-            {/* Central Resident Pin (Sunshine Residency) */}
-            <div 
-              style={{ 
-                position: 'absolute', 
-                left: '50%', 
-                top: '50%', 
-                transform: 'translate(-50%, -50%)', 
-                zIndex: 10,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center'
-              }}
-            >
-              <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'var(--purple)', border: '3px solid #FFFFFF', boxShadow: '0 4px 8px rgba(155, 123, 255, 0.4)' }} />
-              <span style={{ fontSize: '9px', fontWeight: '800', background: '#FFFFFF', padding: '2px 4px', borderRadius: '4px', marginTop: '2px', boxShadow: '1px 2px 4px rgba(0,0,0,0.1)' }}>Sunshine (You)</span>
-            </div>
-
-            {/* Event Pins */}
-            {events.map((evt) => (
-              <button
-                key={evt.id}
+      {/* Display Cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '10px' }}>
+        
+        {/* Events Section */}
+        {displayEvents.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <h4 style={{ fontSize: '15px', textAlign: 'left' }}>Events & Nights</h4>
+            {displayEvents.map((evt) => (
+              <div 
+                key={evt.id} 
                 onClick={() => setSelectedEvent(evt)}
-                className="clay-card-interactive"
-                style={{
-                  position: 'absolute',
-                  left: `${evt.coordinates?.x || 30}%`,
-                  top: `${evt.coordinates?.y || 40}%`,
-                  transform: 'translate(-50%, -50%)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  zIndex: 5
-                }}
+                className="clay-card clay-card-interactive" 
+                style={{ padding: '0', overflow: 'hidden', borderRadius: '24px', textAlign: 'left', cursor: 'pointer' }}
               >
-                <div 
-                  style={{ 
-                    width: '32px', 
-                    height: '32px', 
-                    borderRadius: '50%', 
-                    backgroundColor: evt.featured ? 'var(--pink)' : 'var(--primary-cyan)', 
-                    border: '2px solid #FFFFFF', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    boxShadow: '0 6px 12px rgba(8, 127, 140, 0.2)'
-                  }}
-                >
-                  <span style={{ fontSize: '14px' }}>
-                    {evt.category === 'Comedy' ? '🎤' : evt.category === 'Music' ? '🎵' : evt.category === 'Workshops' ? '🎨' : evt.category === 'Food' ? '🍔' : '🏃'}
-                  </span>
+                <div style={{ height: '140px', width: '100%', position: 'relative' }}>
+                  <img src={evt.image} alt={evt.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {/* Neighbour Score badge */}
+                  <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(255,255,255,0.95)', padding: '4px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '2px', boxShadow: '0 4px 8px rgba(0,0,0,0.05)' }}>
+                    <Star size={12} color="#FBBF24" fill="#FBBF24" />
+                    <span>Score: {evt.neighbourScore}</span>
+                  </div>
+                  {/* Privacy Badge */}
+                  {evt.privacyLevel === 'Private' && (
+                    <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'var(--purple)', color: '#FFFFFF', padding: '4px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: '700' }}>
+                      🔒 PRIVATE
+                    </div>
+                  )}
                 </div>
-              </button>
+
+                <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--pink)', textTransform: 'uppercase' }}>{evt.category}</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>📍 {evt.distance}</span>
+                  </div>
+                  <h3 style={{ fontSize: '16px', fontWeight: '800' }}>{evt.title}</h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-sub)', marginTop: '4px' }}>
+                    <span>🕒 {evt.time}</span>
+                    <span style={{ fontWeight: '800', color: 'var(--deep-teal)' }}>{evt.price}</span>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
+        )}
 
-          {/* Map Footer Bar */}
-          <div style={{ padding: '10px 14px', background: '#FFFFFF', fontSize: '11px', color: 'var(--text-sub)', textAlign: 'center', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-            📍 Displaying <b>{events.length} event locations</b> within 5 km of your society.
+        {/* Housing / Roommates Section */}
+        {displayListings.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <h4 style={{ fontSize: '15px', textAlign: 'left' }}>Housing & Roommates</h4>
+            {displayListings.map((list) => (
+              <div 
+                key={list.id} 
+                onClick={() => setSelectedListing(list)}
+                className="clay-card clay-card-interactive" 
+                style={{ padding: '0', overflow: 'hidden', borderRadius: '24px', textAlign: 'left', cursor: 'pointer' }}
+              >
+                <div style={{ height: '140px', width: '100%', position: 'relative' }}>
+                  <img src={list.image} alt={list.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {/* Verified Owner overlay */}
+                  <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(255,255,255,0.95)', padding: '4px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Check size={12} color="var(--green)" strokeWidth={3} />
+                    <span>{list.verificationStatus}</span>
+                  </div>
+                </div>
+
+                <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--purple)', textTransform: 'uppercase' }}>{list.type}</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>📍 {list.distance}</span>
+                  </div>
+                  <h3 style={{ fontSize: '16px', fontWeight: '800' }}>{list.title}</h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-sub)', marginTop: '4px' }}>
+                    <span>🛌 {list.bedrooms} Bed · 🚿 {list.bathrooms} Bath</span>
+                    <span style={{ fontWeight: '800', color: 'var(--deep-teal)' }}>₹{list.rent}/month</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Event Details Overlay Modal */}
+        {displayEvents.length === 0 && displayListings.length === 0 && (
+          <p style={{ textAlign: 'center', padding: '30px', color: 'var(--text-sub)' }}>No matches found. Try another search or filter.</p>
+        )}
+
+      </div>
+
+      {/* Event Details Modal */}
       {selectedEvent && (
         <div className="modal-overlay" onClick={() => setSelectedEvent(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ padding: '0', overflow: 'hidden' }}>
-            
-            {/* Header Image with Buttons */}
-            <div style={{ position: 'relative', height: '200px', width: '100%' }}>
-              <img 
-                src={selectedEvent.image} 
-                alt={selectedEvent.title} 
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+            <div style={{ position: 'relative', height: '180px', width: '100%' }}>
+              <img src={selectedEvent.image} alt={selectedEvent.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               <button 
                 onClick={() => setSelectedEvent(null)}
                 className="clay-btn" 
@@ -327,7 +281,6 @@ export default function DiscoverScreen({ userProfile }) {
               </button>
               
               <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', gap: '8px' }}>
-                {/* Interest heart button */}
                 <button 
                   onClick={() => toggleInterest(selectedEvent.id)}
                   className="clay-btn" 
@@ -342,118 +295,188 @@ export default function DiscoverScreen({ userProfile }) {
                 >
                   <Heart size={16} fill={interestedEvents.has(selectedEvent.id) ? '#FFFFFF' : 'none'} />
                 </button>
-                {/* Share button */}
-                <button 
-                  className="clay-btn" 
-                  style={{ width: '36px', height: '36px', borderRadius: '50%', padding: 0 }}
-                >
-                  <Share2 size={16} />
-                </button>
               </div>
             </div>
 
-            {/* Event Description Body */}
-            <div className="custom-scroll" style={{ padding: '20px 24px 30px 24px', display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto' }}>
+            <div className="custom-scroll" style={{ padding: '20px 20px 30px 20px', display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto' }}>
               <div>
-                <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--deep-teal)', textTransform: 'uppercase' }}>
-                  {selectedEvent.category} • {selectedEvent.distance}
-                </span>
-                <h3 style={{ fontSize: '20px', fontWeight: '800', marginTop: '4px', lineHeight: '1.3' }}>
-                  {selectedEvent.title}
-                </h3>
-              </div>
-
-              {/* Date/Location Details Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-                <div className="clay-card" style={{ padding: '10px 14px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '2px', background: '#F9FFFF' }}>
-                  <span style={{ fontSize: '10px', color: 'var(--text-sub)' }}>DATE & TIME</span>
-                  <span style={{ fontSize: '11px', fontWeight: '700' }}>{selectedEvent.date}</span>
-                  <span style={{ fontSize: '10px', color: 'var(--text-sub)' }}>{selectedEvent.time}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--pink)', textTransform: 'uppercase' }}>
+                    {selectedEvent.category} • {selectedEvent.distance}
+                  </span>
+                  
+                  {/* Dynamic Neighbour Score display */}
+                  <span style={{ marginLeft: 'auto', background: 'var(--yellow)', fontSize: '10px', fontWeight: '800', padding: '3px 6px', borderRadius: '6px' }}>
+                    🔥 Score: {selectedEvent.neighbourScore}/10
+                  </span>
                 </div>
-                <div className="clay-card" style={{ padding: '10px 14px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '2px', background: '#F9FFFF' }}>
-                  <span style={{ fontSize: '10px', color: 'var(--text-sub)' }}>VENUE</span>
-                  <span style={{ fontSize: '11px', fontWeight: '700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedEvent.location.split(',')[0]}</span>
-                  <span style={{ fontSize: '10px', color: 'var(--text-sub)' }}>{selectedEvent.location.split(',').slice(1).join(',')}</span>
+                <h3 style={{ fontSize: '18px', fontWeight: '800', marginTop: '6px' }}>{selectedEvent.title}</h3>
+              </div>
+
+              {/* Security info for private event */}
+              {selectedEvent.privacyLevel === 'Private' ? (
+                <div style={{ background: '#FFF7ED', padding: '12px', borderRadius: '12px', border: '1px solid rgba(249,115,22,0.15)', fontSize: '11.5px', color: '#C2410C', textAlign: 'left' }}>
+                  🔒 **Private House Party Privacy Rule:** The exact street coordinates are hidden for safety. Click 'Request to Join' below. Once the host Siddharth approves your profile, the address details will unlock.
                 </div>
-              </div>
-
-              {/* Description */}
-              <div>
-                <h4 style={{ fontSize: '14px', marginBottom: '4px' }}>About the Event</h4>
-                <p style={{ fontSize: '13px', color: 'var(--text-sub)', lineHeight: '1.6' }}>
-                  {selectedEvent.description}
-                </p>
-              </div>
-
-              {/* Organizer & Seats info */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', background: '#F8F9FA', padding: '10px 14px', borderRadius: '14px' }}>
-                <span>Host: <b>{selectedEvent.organizer}</b></span>
-                <span style={{ color: 'red', fontWeight: '600' }}>Only {selectedEvent.availableSeats} seats left!</span>
-              </div>
-
-              {/* Community Integration: "People from your community are going" */}
-              {selectedEvent.communityAttendees && selectedEvent.communityAttendees.length > 0 && (
-                <div className="clay-card" style={{ padding: '14px', borderRadius: '20px', background: '#FFF0F5', border: '1px solid rgba(255, 143, 207, 0.1)' }}>
-                  <h4 style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-main)', marginBottom: '8px' }}>
-                    <span>👥 People from your community are going</span>
-                  </h4>
-                  <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '2px' }}>
-                    {selectedEvent.communityAttendees.map((person, index) => (
-                      <div 
-                        key={index}
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '6px', 
-                          background: '#FFFFFF', 
-                          padding: '6px 10px', 
-                          borderRadius: '12px', 
-                          fontSize: '11px',
-                          boxShadow: '1px 2px 4px rgba(0,0,0,0.03)',
-                          whiteSpace: 'nowrap'
-                        }}
-                      >
-                        <span style={{ fontSize: '14px' }}>{person.avatar}</span>
-                        <div>
-                          <div style={{ fontWeight: '700' }}>{person.name}</div>
-                          <div style={{ fontSize: '9px', opacity: 0.6 }}>Flat {person.flat}</div>
-                        </div>
-                      </div>
-                    ))}
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div className="clay-card" style={{ padding: '8px 12px', borderRadius: '12px', fontSize: '11px', background: '#F9FFFF' }}>
+                    <span style={{ color: 'var(--text-sub)', fontSize: '9px' }}>DATE & TIME</span>
+                    <div style={{ fontWeight: '700' }}>{selectedEvent.date}</div>
+                    <div>{selectedEvent.time}</div>
+                  </div>
+                  <div className="clay-card" style={{ padding: '8px 12px', borderRadius: '12px', fontSize: '11px', background: '#F9FFFF' }}>
+                    <span style={{ color: 'var(--text-sub)', fontSize: '9px' }}>LOCATION</span>
+                    <div style={{ fontWeight: '700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedEvent.location.split(',')[0]}</div>
+                    <div style={{ fontSize: '10px', opacity: 0.6 }}>{selectedEvent.location.split(',')[1]}</div>
                   </div>
                 </div>
               )}
 
-              {/* Bottom booking row */}
+              {/* Description */}
+              <div style={{ textAlign: 'left' }}>
+                <h4 style={{ fontSize: '13px', fontWeight: '800' }}>About the Event</h4>
+                <p style={{ fontSize: '12px', color: 'var(--text-sub)', lineHeight: '1.5', marginTop: '4px' }}>
+                  {selectedEvent.description}
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', background: '#F8F9FA', padding: '8px 12px', borderRadius: '10px' }}>
+                <span>Host: <b>{selectedEvent.organizer}</b></span>
+                <span style={{ color: 'var(--deep-teal)', fontWeight: '700' }}>🟢 {selectedEvent.verificationStatus}</span>
+              </div>
+
+              {/* CTA Booking Row */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: '10px', color: 'var(--text-sub)' }}>TICKET PRICE</span>
-                  <span style={{ fontSize: '18px', fontWeight: '800', color: 'var(--deep-teal)' }}>{selectedEvent.price}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                  <span style={{ fontSize: '9px', color: 'var(--text-sub)' }}>ENTRY FEE</span>
+                  <span style={{ fontSize: '16px', fontWeight: '800', color: 'var(--deep-teal)' }}>{selectedEvent.price}</span>
                 </div>
-                
-                {registeredEvents.has(selectedEvent.id) ? (
-                  <button 
-                    className="clay-btn" 
-                    style={{ backgroundColor: 'var(--green)', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'default' }}
-                  >
-                    <Check size={16} />
-                    Registered!
-                  </button>
+
+                {selectedEvent.privacyLevel === 'Private' ? (
+                  joinedPrivateEvents.has(selectedEvent.id) ? (
+                    <button className="clay-btn" style={{ backgroundColor: 'var(--soft-sky)', cursor: 'default' }}>
+                      Request Sent ⏳
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => requestJoinPrivateEvent(selectedEvent.id)}
+                      className="clay-btn clay-btn-purple" 
+                      style={{ padding: '12px 20px', borderRadius: '14px' }}
+                    >
+                      Request to Join
+                    </button>
+                  )
                 ) : (
                   <button 
-                    onClick={() => registerEvent(selectedEvent.id)}
+                    onClick={() => {
+                      alert("Tickets generated successfully! Show QR code in profile at entry.");
+                      setSelectedEvent(null);
+                    }}
                     className="clay-btn clay-btn-primary" 
-                    style={{ padding: '14px 28px', borderRadius: '16px' }}
+                    style={{ padding: '12px 24px', borderRadius: '14px' }}
                   >
-                    Register Now
+                    Register / Tickets
                   </button>
                 )}
               </div>
-
             </div>
           </div>
         </div>
       )}
+
+      {/* Housing Details Modal */}
+      {selectedListing && (
+        <div className="modal-overlay" onClick={() => setSelectedListing(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ padding: '0', overflow: 'hidden' }}>
+            <div style={{ position: 'relative', height: '180px', width: '100%' }}>
+              <img src={selectedListing.image} alt={selectedListing.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <button 
+                onClick={() => setSelectedListing(null)}
+                className="clay-btn" 
+                style={{ position: 'absolute', top: '16px', left: '16px', width: '36px', height: '36px', borderRadius: '50%', padding: 0 }}
+              >
+                ✕
+              </button>
+              
+              <div style={{ position: 'absolute', top: '16px', right: '16px' }}>
+                <button 
+                  onClick={() => toggleSaveListing(selectedListing.id)}
+                  className="clay-btn" 
+                  style={{ 
+                    width: '36px', 
+                    height: '36px', 
+                    borderRadius: '50%', 
+                    padding: 0,
+                    backgroundColor: savedListings.has(selectedListing.id) ? 'var(--pink)' : '#FFFFFF',
+                    color: savedListings.has(selectedListing.id) ? '#FFFFFF' : 'var(--text-main)'
+                  }}
+                >
+                  <Heart size={16} fill={savedListings.has(selectedListing.id) ? '#FFFFFF' : 'none'} />
+                </button>
+              </div>
+            </div>
+
+            <div className="custom-scroll" style={{ padding: '20px 20px 30px 20px', display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto' }}>
+              <div>
+                <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--purple)', textTransform: 'uppercase' }}>
+                  {selectedListing.type} • {selectedListing.distance}
+                </span>
+                <h3 style={{ fontSize: '18px', fontWeight: '800', marginTop: '4px' }}>{selectedListing.title}</h3>
+              </div>
+
+              {/* Features details */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                {[
+                  { label: 'ROOMS', val: `${selectedListing.bedrooms} Bed` },
+                  { label: 'BATHROOMS', val: `${selectedListing.bathrooms} Bath` },
+                  { label: 'FURNISHING', val: selectedListing.furnished }
+                ].map((f, idx) => (
+                  <div key={idx} className="clay-card" style={{ padding: '8px', borderRadius: '12px', fontSize: '10px', background: '#F9FFFF', textAlign: 'center' }}>
+                    <div style={{ opacity: 0.5 }}>{f.label}</div>
+                    <div style={{ fontWeight: '800', marginTop: '2px' }}>{f.val}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Description */}
+              <div style={{ textAlign: 'left' }}>
+                <h4 style={{ fontSize: '13px', fontWeight: '800' }}>Description</h4>
+                <p style={{ fontSize: '12px', color: 'var(--text-sub)', lineHeight: '1.5', marginTop: '4px' }}>
+                  {selectedListing.description}
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', background: '#F8F9FA', padding: '8px 12px', borderRadius: '10px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Shield size={13} color="var(--green)" />
+                  Owner: <b>{selectedListing.verificationStatus}</b>
+                </span>
+                <span style={{ color: selectedListing.petsAllowed ? 'var(--deep-teal)' : '#D97706', fontWeight: '700' }}>
+                  {selectedListing.petsAllowed ? '🐾 Pets Ok' : '🚫 No Pets'}
+                </span>
+              </div>
+
+              {/* Contact / Chat */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                  <span style={{ fontSize: '9px', color: 'var(--text-sub)' }}>MONTHLY RENT</span>
+                  <span style={{ fontSize: '18px', fontWeight: '800', color: 'var(--deep-teal)' }}>₹{selectedListing.rent}</span>
+                </div>
+
+                <a 
+                  href={`tel:${selectedListing.contact}`}
+                  className="clay-btn clay-btn-primary" 
+                  style={{ padding: '12px 24px', borderRadius: '14px', textDecoration: 'none' }}
+                >
+                  Contact Owner
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -2,30 +2,34 @@ import React, { useState } from 'react';
 import Layout from './components/Layout';
 import OnboardingScreen from './screens/OnboardingScreen';
 import HomeScreen from './screens/HomeScreen';
-import AIAssistantScreen from './screens/AIAssistantScreen';
 import DiscoverScreen from './screens/DiscoverScreen';
-import ServicesScreen from './screens/ServicesScreen';
+import MapScreen from './screens/MapScreen';
+import AIAssistantScreen from './screens/AIAssistantScreen';
 import ProfileScreen from './screens/ProfileScreen';
-import SocietyScreen from './screens/SocietyScreen';
-import { Bell, CheckCircle } from 'lucide-react';
+import AddListingScreen from './screens/AddListingScreen';
+import { CheckCircle } from 'lucide-react';
 
 function App() {
   const [isOnboarded, setIsOnboarded] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
-  const [activeSubSection, setActiveSubSection] = useState(null); // Deep link inside society tab
-  const [aiPrefill, setAiPrefill] = useState({ text: '', autoSend: false });
+  const [showAddModal, setShowAddModal] = useState(false);
+  
+  // Quick Filters state passed for deep linking from Home quick action grid
+  const [quickFilters, setQuickFilters] = useState(null);
+
   const [userProfile, setUserProfile] = useState({
     name: 'Bigyat',
-    community: 'Sunshine Residency, Guwahati',
+    community: 'Zoo Road, Guwahati',
     apartment: 'B-304',
-    language: 'English'
+    language: 'English',
+    interests: ['Music', 'Parties', 'Culture']
   });
 
-  // Notification banners (claymorphic slide down alerts)
-  const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
+  const [aiPrefill, setAiPrefill] = useState({ text: '', autoSend: false });
+  const [notification, setNotification] = useState({ show: false, message: '' });
 
-  const triggerNotification = (message, type = 'success') => {
-    setNotification({ show: true, message, type });
+  const triggerNotification = (message) => {
+    setNotification({ show: true, message });
     setTimeout(() => {
       setNotification(prev => ({ ...prev, show: false }));
     }, 4000);
@@ -34,21 +38,15 @@ function App() {
   const handleCompleteOnboarding = (profileData) => {
     setUserProfile(profileData);
     setIsOnboarded(true);
-    triggerNotification(`Welcome to ${profileData.community.split(',')[0]}! 🏡`);
+    triggerNotification(`Welcome, ${profileData.name}! Let's discover ${profileData.community.split(',')[0]} 📍`);
   };
 
-  const handleTicketCreated = (ticket) => {
-    triggerNotification(`Ticket #${ticket.id} created successfully! 🛠️`);
+  const handleQuickActionFilter = (filters) => {
+    setQuickFilters(filters);
   };
 
-  const handleBookingCreated = (booking) => {
-    triggerNotification(`Booking confirmed for ${booking.providerName}! 📅`);
-  };
-
-  // Navigates and sets sub-sections (deep links)
-  const handleQuickAction = (section) => {
-    setActiveSubSection(section);
-    setActiveTab('society');
+  const handleAddListingSuccess = (message) => {
+    triggerNotification(message);
   };
 
   return (
@@ -58,12 +56,12 @@ function App() {
           <OnboardingScreen onComplete={handleCompleteOnboarding} />
         </div>
       ) : (
-        <Layout activeTab={activeTab} setTab={(tab) => {
-          setActiveTab(tab);
-          setActiveSubSection(null); // reset deep link when clicking tab manually
-        }}>
-          
-          {/* Top Slide Down Notification Banner */}
+        <Layout 
+          activeTab={activeTab} 
+          setTab={setActiveTab}
+          onAddClick={() => setShowAddModal(true)}
+        >
+          {/* Top Slide Down Notification Toast */}
           {notification.show && (
             <div 
               className="clay-card"
@@ -91,43 +89,37 @@ function App() {
             </div>
           )}
 
-          {/* Screen Switcher */}
+          {/* Core Tab Switcher */}
           {activeTab === 'home' && (
             <HomeScreen 
-              userProfile={userProfile} 
-              setTab={setActiveTab} 
-              setAIPrefill={setAiPrefill}
-              onCreateTicketNotification={handleQuickAction}
-            />
-          )}
-
-          {activeTab === 'ai' && (
-            <AIAssistantScreen 
-              prefill={aiPrefill} 
-              clearPrefill={() => setAiPrefill({ text: '', autoSend: false })}
+              userProfile={userProfile}
               setTab={setActiveTab}
-              onTicketCreated={handleTicketCreated}
+              setAIPrefill={setAiPrefill}
+              onQuickActionFilter={handleQuickActionFilter}
             />
           )}
 
           {activeTab === 'discover' && (
             <DiscoverScreen 
               userProfile={userProfile}
+              quickFilters={quickFilters}
+              clearQuickFilters={() => setQuickFilters(null)}
             />
           )}
 
-          {activeTab === 'services' && (
-            <ServicesScreen 
+          {activeTab === 'map' && (
+            <MapScreen 
               userProfile={userProfile}
-              onBookingCreated={handleBookingCreated}
             />
           )}
 
-          {activeTab === 'society' && (
-            <SocietyScreen 
+          {activeTab === 'ai' && (
+            <AIAssistantScreen 
+              prefill={aiPrefill}
+              clearPrefill={() => setAiPrefill({ text: '', autoSend: false })}
+              setTab={setActiveTab}
+              onQuickActionFilter={handleQuickActionFilter}
               userProfile={userProfile}
-              activeSubSection={activeSubSection}
-              onBookingCreated={handleBookingCreated}
             />
           )}
 
@@ -137,10 +129,18 @@ function App() {
             />
           )}
 
+          {/* Stepper Wizard modal for contributing listings */}
+          {showAddModal && (
+            <AddListingScreen 
+              onClose={() => setShowAddModal(false)}
+              onAddSuccess={handleAddListingSuccess}
+            />
+          )}
+
         </Layout>
       )}
 
-      {/* Slide down animation utility */}
+      {/* Slide down animation styled */}
       <style>{`
         @keyframes slideDown {
           from { transform: translateY(-50px); opacity: 0; }

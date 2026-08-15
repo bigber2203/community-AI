@@ -3,7 +3,7 @@ import { Home, Search, Map, MessageSquare, User, Plus } from 'lucide-react';
 
 export default function Layout({ children, activeTab, setTab, onAddClick }) {
   return (
-    <div className="app-container">
+    <div className={`app-container ${activeTab === 'map' ? 'map-active-layout' : ''}`}>
       {/* Scrollable Screen Content */}
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', height: '100%' }}>
         {children}

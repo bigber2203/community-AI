@@ -6,23 +6,25 @@ import { mapService } from '../services/mapService';
 
 setWorkerUrl(workerUrl);
 
-export default function URMap({
-  events = [],
-  listings = [],
+export default function URMap({ 
+  events = [], 
+  listings = [], 
   center = [91.7362, 26.1445], // Default Guwahati
-  zoom = 13,
-  onMarkerClick,
-  onBoundsChange
+  zoom = 13, 
+  onMarkerClick, 
+  onBoundsChange 
 }) {
   const mapContainer = useRef(null);
   const mapInstance = useRef(null);
   const markersRef = useRef([]);
+  const resizeObserverRef = useRef(null);
+  const resizeTimeoutRef = useRef(null);
 
   // Initialize Map
   useEffect(() => {
-    if (mapInstance.current) return;
+    if (!mapContainer.current || mapInstance.current) return;
 
-    mapInstance.current = new Map({
+    const map = new Map({
       container: mapContainer.current,
       style: 'https://demotiles.maplibre.org/style.json', // Free open testing tiles
       center: center,
@@ -30,35 +32,68 @@ export default function URMap({
       attributionControl: false
     });
 
+    mapInstance.current = map;
+
     // Add zoom and rotation controls
-    mapInstance.current.addControl(new NavigationControl(), 'top-right');
+    map.addControl(new NavigationControl(), 'top-right');
 
     // Bounds change listener
-    mapInstance.current.on('moveend', () => {
+    map.on('moveend', () => {
       if (onBoundsChange && mapInstance.current) {
         const bounds = mapInstance.current.getBounds();
         onBoundsChange(bounds);
       }
     });
 
-    // Initial bounds fire
-    mapInstance.current.on('load', () => {
-      if (onBoundsChange && mapInstance.current) {
-        const bounds = mapInstance.current.getBounds();
+    // On map load, trigger resize and bounds calculation
+    map.on('load', () => {
+      map.resize();
+      if (onBoundsChange) {
+        const bounds = map.getBounds();
         onBoundsChange(bounds);
       }
     });
+
+    // Forced delayed resize for layout settling
+    resizeTimeoutRef.current = setTimeout(() => {
+      if (mapInstance.current) {
+        mapInstance.current.resize();
+      }
+    }, 250);
+
+    // Setup ResizeObserver to track container resizing (mobile rotation, panel expansion, etc.)
+    if (window.ResizeObserver && mapContainer.current) {
+      const resizeObserver = new ResizeObserver(() => {
+        if (mapInstance.current) {
+          mapInstance.current.resize();
+        }
+      });
+      resizeObserver.observe(mapContainer.current);
+      resizeObserverRef.current = resizeObserver;
+    }
 
     return () => {
-      mapInstance.current?.remove();
-      mapInstance.current = null;
+      // Cleanup observers
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+        resizeObserverRef.current = null;
+      }
+      // Cleanup timeouts
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+        resizeTimeoutRef.current = null;
+      }
+      // Cleanup map instance
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+      }
     };
   }, []);
 
   // Update center when props change
   useEffect(() => {
     if (mapInstance.current) {
-      // Check if it's far from current center to avoid constant jumping
       const currentCenter = mapInstance.current.getCenter();
       const dist = Math.abs(currentCenter.lng - center[0]) + Math.abs(currentCenter.lat - center[1]);
       if (dist > 0.0001) {
@@ -88,11 +123,10 @@ export default function URMap({
     // Draw Events
     events.forEach(evt => {
       const [lng, lat] = mapService.itemToLatLng(evt);
-
-      // Determine clay marker color & icon
+      
       let bgColor = 'var(--primary-cyan)'; // Default cyan
       let icon = '🎉';
-
+      
       if (evt.category === 'Nightlife') {
         bgColor = 'var(--pink)';
         icon = '🎧';
@@ -147,7 +181,7 @@ export default function URMap({
     // Draw Listings (Housing & Roommates)
     listings.forEach(list => {
       const [lng, lat] = mapService.itemToLatLng(list);
-
+      
       let bgColor = 'var(--yellow)';
       let icon = '🏠';
 
@@ -203,16 +237,14 @@ export default function URMap({
   return (
     <div
       ref={mapContainer}
-      className="clay-card"
       style={{
         width: '100%',
         height: '100%',
-        minHeight: '400px',
-        padding: 0,
+        position: 'relative',
         borderRadius: '32px',
         overflow: 'hidden',
         border: '4px solid #FFFFFF',
-        boxShadow: '20px 20px 60px rgba(8, 127, 140, 0.15), -20px -20px 60px #FFFFFF'
+        boxShadow: '10px 10px 30px rgba(8, 127, 140, 0.08), -10px -10px 30px #FFFFFF'
       }}
     />
   );

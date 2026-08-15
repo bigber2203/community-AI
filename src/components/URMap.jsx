@@ -3,14 +3,22 @@ import { Map, NavigationControl, Marker, setWorkerUrl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { mapService } from '../services/mapService';
+import { 
+  getMapStyleUrl, 
+  MAP_DEFAULT_CENTER, 
+  MAP_DEFAULT_ZOOM, 
+  MAP_MIN_ZOOM, 
+  MAP_MAX_ZOOM, 
+  ENABLE_3D_BUILDINGS 
+} from '../config/mapConfig';
 
 setWorkerUrl(workerUrl);
 
 export default function URMap({ 
   events = [], 
   listings = [], 
-  center = [91.7362, 26.1445], // Default Guwahati
-  zoom = 13, 
+  center = MAP_DEFAULT_CENTER, 
+  zoom = MAP_DEFAULT_ZOOM, 
   onMarkerClick, 
   onBoundsChange 
 }) {
@@ -26,9 +34,11 @@ export default function URMap({
 
     const map = new Map({
       container: mapContainer.current,
-      style: 'https://demotiles.maplibre.org/style.json', // Free open testing tiles
+      style: getMapStyleUrl(),
       center: center,
       zoom: zoom,
+      minZoom: MAP_MIN_ZOOM,
+      maxZoom: MAP_MAX_ZOOM,
       attributionControl: false
     });
 
@@ -42,6 +52,75 @@ export default function URMap({
       if (onBoundsChange && mapInstance.current) {
         const bounds = mapInstance.current.getBounds();
         onBoundsChange(bounds);
+      }
+    });
+
+    // Handle style load to inject 3D buildings dynamically if supported
+    map.on('style.load', () => {
+      if (!ENABLE_3D_BUILDINGS) return;
+
+      const style = map.getStyle();
+      if (!style || !style.sources) return;
+
+      // Detect vector source containing buildings
+      let buildingSourceId = null;
+      for (const sourceId in style.sources) {
+        if (style.sources[sourceId].type === 'vector') {
+          const hasBuildingLayer = style.layers.some(
+            l => l.source === sourceId && l['source-layer'] === 'building'
+          );
+          if (hasBuildingLayer) {
+            buildingSourceId = sourceId;
+            break;
+          }
+        }
+      }
+
+      if (buildingSourceId) {
+        // Find first symbol layer to insert 3D buildings below labels
+        let firstSymbolId = null;
+        if (style.layers) {
+          for (let i = 0; i < style.layers.length; i++) {
+            if (style.layers[i].type === 'symbol') {
+              firstSymbolId = style.layers[i].id;
+              break;
+            }
+          }
+        }
+
+        // Add extrusion layer
+        if (!map.getLayer('3d-buildings')) {
+          map.addLayer(
+            {
+              id: '3d-buildings',
+              source: buildingSourceId,
+              'source-layer': 'building',
+              type: 'fill-extrusion',
+              minzoom: 14.5,
+              paint: {
+                'fill-extrusion-color': [
+                  'interpolate', ['linear'], ['coalesce', ['get', 'render_height'], ['get', 'height'], 10],
+                  0, '#f3eadc',
+                  15, '#e6d8c4',
+                  40, '#d1c0aa',
+                  80, '#b8a68e'
+                ],
+                'fill-extrusion-height': [
+                  'interpolate', ['linear'], ['zoom'],
+                  14.5, 0,
+                  15, ['coalesce', ['get', 'render_height'], ['get', 'height'], 15]
+                ],
+                'fill-extrusion-base': [
+                  'interpolate', ['linear'], ['zoom'],
+                  14.5, 0,
+                  15, ['coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0]
+                ],
+                'fill-extrusion-opacity': 0.7
+              }
+            },
+            firstSymbolId
+          );
+        }
       }
     });
 
@@ -91,26 +170,27 @@ export default function URMap({
     };
   }, []);
 
-  // Update center when props change
+  // Update center & zoom smoothly when props change
   useEffect(() => {
     if (mapInstance.current) {
       const currentCenter = mapInstance.current.getCenter();
-      const dist = Math.abs(currentCenter.lng - center[0]) + Math.abs(currentCenter.lat - center[1]);
-      if (dist > 0.0001) {
-        mapInstance.current.setCenter(center);
-      }
-    }
-  }, [center]);
-
-  // Update zoom when props change
-  useEffect(() => {
-    if (mapInstance.current) {
       const currentZoom = mapInstance.current.getZoom();
-      if (Math.abs(currentZoom - zoom) > 0.1) {
-        mapInstance.current.setZoom(zoom);
+      
+      const lngDiff = Math.abs(currentCenter.lng - center[0]);
+      const latDiff = Math.abs(currentCenter.lat - center[1]);
+      const zoomDiff = Math.abs(currentZoom - zoom);
+
+      if (lngDiff > 0.0001 || latDiff > 0.0001 || zoomDiff > 0.1) {
+        mapInstance.current.flyTo({
+          center: center,
+          zoom: zoom,
+          speed: 1.2,
+          curve: 1.1,
+          essential: true
+        });
       }
     }
-  }, [zoom]);
+  }, [center, zoom]);
 
   // Re-draw Markers when listings or filters change
   useEffect(() => {

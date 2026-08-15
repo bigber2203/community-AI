@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Star, MapPin, Check, Search, Compass, ShieldAlert, Heart, Phone, Calendar, Clock, Sparkles } from 'lucide-react';
-import URMap from '../components/URMap';
+import URMap from '../components/URMap';  
 import { eventService } from '../services/eventService';
 import { listingService } from '../services/listingService';
 import { rankingService } from '../services/rankingService';
 import { mapService } from '../services/mapService';
+import { geocodingService } from '../services/geocodingService';
+import { MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM } from '../config/mapConfig';
 
 export default function MapScreen({ userProfile }) {
   const [allEvents, setAllEvents] = useState([]);
@@ -15,10 +17,14 @@ export default function MapScreen({ userProfile }) {
   const [activeFilter, setActiveFilter] = useState('All');
   const [selectedMarker, setSelectedMarker] = useState(null); // { type: 'event' | 'housing', data: ... }
   const [mapSearch, setMapSearch] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [hoveredIdx, setHoveredIdx] = useState(-1);
   
   // Geolocation & Map Settings
-  const [mapCenter, setMapCenter] = useState([91.7362, 26.1445]); // Guwahati default center
-  const [mapZoom, setMapZoom] = useState(13);
+  const [mapCenter, setMapCenter] = useState(MAP_DEFAULT_CENTER); // Default center from config
+  const [mapZoom, setMapZoom] = useState(MAP_DEFAULT_ZOOM);
   const [currentBounds, setCurrentBounds] = useState(null);
   const [showSearchThisAreaBtn, setShowSearchThisAreaBtn] = useState(false);
 
@@ -54,17 +60,53 @@ export default function MapScreen({ userProfile }) {
     loadData();
   }, [userProfile.interests]);
 
-  // Handle Location Search
-  const handleLocationSearch = () => {
+  // Debounced search for Suggestions
+  useEffect(() => {
+    if (!mapSearch.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const delayDebounce = setTimeout(async () => {
+      setIsSearching(true);
+      const results = await geocodingService.search(mapSearch);
+      setSuggestions(results);
+      setShowSuggestions(results.length > 0);
+      setIsSearching(false);
+    }, 400);
+
+    return () => clearTimeout(delayDebounce);
+  }, [mapSearch]);
+
+  // Handle clicking outside suggestions to close dropdown
+  useEffect(() => {
+    const handleOutsideClick = () => {
+      setShowSuggestions(false);
+    };
+    window.addEventListener('click', handleOutsideClick);
+    return () => window.removeEventListener('click', handleOutsideClick);
+  }, []);
+
+  const handleSelectSuggestion = (suggestion) => {
+    setMapSearch(suggestion.name);
+    setMapCenter(suggestion.center);
+    setMapZoom(suggestion.zoom || 14);
+    setShowSuggestions(false);
+    setShowSearchThisAreaBtn(false);
+    setSelectedMarker(null);
+  };
+
+  // Handle Location Search when "Go" or Enter is pressed
+  const handleLocationSearch = async () => {
     if (!mapSearch.trim()) return;
-    const match = mapService.searchLocation(mapSearch);
-    if (match) {
-      setMapCenter(match.center);
-      setMapZoom(match.zoom);
-      setShowSearchThisAreaBtn(false);
-      setSelectedMarker(null);
+    setIsSearching(true);
+    const results = await geocodingService.search(mapSearch);
+    setIsSearching(false);
+    if (results && results.length > 0) {
+      handleSelectSuggestion(results[0]);
     } else {
-      alert(`Location "${mapSearch}" not found. Try "Beltola" or "Christian Basti".`);
+      alert(`Location "${mapSearch}" not found.`);
     }
   };
 
@@ -95,6 +137,7 @@ export default function MapScreen({ userProfile }) {
   const handleBoundsChange = (bounds) => {
     setCurrentBounds(bounds);
     setShowSearchThisAreaBtn(true);
+    setShowSuggestions(false); // Close suggestions on map movement
   };
 
   // Filter listings inside current map viewport bounds
@@ -204,7 +247,7 @@ export default function MapScreen({ userProfile }) {
           </div>
 
           {/* Search container inside side panel */}
-          <div style={{ padding: '0 20px 10px 20px' }}>
+          <div style={{ padding: '0 20px 10px 20px', position: 'relative' }} onClick={(e) => e.stopPropagation()}>
             <div className="clay-input-container">
               <Search size={16} color="var(--deep-teal)" />
               <input 
@@ -214,15 +257,67 @@ export default function MapScreen({ userProfile }) {
                 value={mapSearch}
                 onChange={(e) => setMapSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleLocationSearch()}
+                onFocus={(e) => {
+                  e.stopPropagation();
+                  if (suggestions.length > 0) setShowSuggestions(true);
+                }}
               />
               <button 
                 onClick={handleLocationSearch}
                 className="clay-btn clay-btn-primary"
                 style={{ padding: '6px 12px', borderRadius: '10px' }}
               >
-                Go
+                {isSearching ? '...' : 'Go'}
               </button>
             </div>
+
+            {/* Suggestions Dropdown */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div 
+                className="clay-card custom-scroll"
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: '20px',
+                  right: '20px',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '16px',
+                  boxShadow: '0 12px 28px rgba(8,127,140,0.15)',
+                  border: '1px solid rgba(8,127,140,0.08)',
+                  zIndex: 9999,
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                  marginTop: '4px',
+                  padding: '6px'
+                }}
+              >
+                {suggestions.map((sug, idx) => (
+                  <div
+                    key={idx}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectSuggestion(sug);
+                    }}
+                    onMouseEnter={() => setHoveredIdx(idx)}
+                    onMouseLeave={() => setHoveredIdx(-1)}
+                    style={{
+                      padding: '10px 12px',
+                      cursor: 'pointer',
+                      borderRadius: '10px',
+                      fontSize: '12px',
+                      color: 'var(--text-main)',
+                      backgroundColor: hoveredIdx === idx ? '#E6FCFC' : 'transparent',
+                      transition: 'background-color 0.15s ease',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}
+                  >
+                    📍 {sug.name}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Filters inside side panel */}
@@ -386,23 +481,77 @@ export default function MapScreen({ userProfile }) {
               paddingTop: 'env(safe-area-inset-top)' // Safe area Notch support
             }}
           >
-            <div className="clay-input-container" style={{ backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', boxShadow: '0 8px 16px rgba(8,127,140,0.1)' }}>
-              <Search size={16} color="var(--deep-teal)" />
-              <input 
-                type="text" 
-                className="clay-input" 
-                placeholder="Search area (e.g. Beltola)..."
-                value={mapSearch}
-                onChange={(e) => setMapSearch(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleLocationSearch()}
-              />
-              <button 
-                onClick={handleLocationSearch}
-                className="clay-btn clay-btn-primary" 
-                style={{ width: '38px', height: '38px', borderRadius: '12px', padding: 0 }}
-              >
-                Go
-              </button>
+            <div style={{ position: 'relative', width: '100%' }} onClick={(e) => e.stopPropagation()}>
+              <div className="clay-input-container" style={{ backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', boxShadow: '0 8px 16px rgba(8,127,140,0.1)' }}>
+                <Search size={16} color="var(--deep-teal)" />
+                <input 
+                  type="text" 
+                  className="clay-input" 
+                  placeholder="Search area (e.g. Beltola)..."
+                  value={mapSearch}
+                  onChange={(e) => setMapSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleLocationSearch()}
+                  onFocus={(e) => {
+                    e.stopPropagation();
+                    if (suggestions.length > 0) setShowSuggestions(true);
+                  }}
+                />
+                <button 
+                  onClick={handleLocationSearch}
+                  className="clay-btn clay-btn-primary" 
+                  style={{ width: '38px', height: '38px', borderRadius: '12px', padding: 0 }}
+                >
+                  {isSearching ? '...' : 'Go'}
+                </button>
+              </div>
+
+              {/* Suggestions Dropdown for Mobile */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div 
+                  className="clay-card custom-scroll"
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '16px',
+                    boxShadow: '0 12px 28px rgba(8,127,140,0.15)',
+                    border: '1px solid rgba(8,127,140,0.08)',
+                    zIndex: 9999,
+                    maxHeight: '180px',
+                    overflowY: 'auto',
+                    marginTop: '6px',
+                    padding: '6px'
+                  }}
+                >
+                  {suggestions.map((sug, idx) => (
+                    <div
+                      key={idx}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectSuggestion(sug);
+                      }}
+                      onMouseEnter={() => setHoveredIdx(idx)}
+                      onMouseLeave={() => setHoveredIdx(-1)}
+                      style={{
+                        padding: '10px 12px',
+                        cursor: 'pointer',
+                        borderRadius: '10px',
+                        fontSize: '12px',
+                        color: 'var(--text-main)',
+                        backgroundColor: hoveredIdx === idx ? '#E6FCFC' : 'transparent',
+                        transition: 'background-color 0.15s ease',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}
+                    >
+                      📍 {sug.name}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Mobile filter chips */}
